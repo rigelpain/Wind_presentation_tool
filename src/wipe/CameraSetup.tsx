@@ -1,9 +1,10 @@
 // カメラの準備の画面（C キー）。授業の前に使う。カメラを選び、2人を登録し、左右を確かめる。
 import { useEffect, useRef } from 'react';
 import { dispatch, useNow } from '../engine/store';
-import type { Lesson, Role, ShowState } from '../engine/types';
-import { tracker, type TrackId } from './tracker';
-import { trackOf, useTracker } from './WipeLayer';
+import type { Lesson, ShowState } from '../engine/types';
+import { drawCameraDebug } from './debugDraw';
+import { tracker } from './tracker';
+import { useTracker } from './WipeLayer';
 
 export function CameraSetup({ state, lesson, onClose }: { state: ShowState; lesson: Lesson; onClose: () => void }) {
   useTracker();
@@ -17,48 +18,9 @@ export function CameraSetup({ state, lesson, onClose }: { state: ShowState; less
 
   useEffect(() => {
     let raf = 0;
-    const roleOfTrack = (id: TrackId): Role => (trackOf('host', swapped) === id ? 'host' : 'guest');
     const draw = () => {
       raf = requestAnimationFrame(draw);
-      const c = canvas.current;
-      if (!c || tracker.status !== 'running') return;
-      const vw = tracker.width;
-      const vh = tracker.height;
-      if (c.width !== vw) c.width = vw;
-      if (c.height !== vh) c.height = vh;
-      const ctx = c.getContext('2d')!;
-      ctx.save();
-      if (mirror) {
-        ctx.translate(vw, 0);
-        ctx.scale(-1, 1);
-      }
-      ctx.drawImage(tracker.video, 0, 0, vw, vh);
-      ctx.lineWidth = Math.max(3, vw / 300);
-      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-      for (const b of tracker.detections) ctx.strokeRect(b.x, b.y, b.w, b.h);
-      for (const id of ['A', 'B'] as TrackId[]) {
-        const t = tracker.tracks[id];
-        if (!t.crop) continue;
-        const role = roleOfTrack(id);
-        ctx.strokeStyle = role === 'host' ? '#2F6FEB' : '#E8452C';
-        ctx.lineWidth = Math.max(6, vw / 160);
-        ctx.setLineDash(t.lostSince ? [20, 14] : []);
-        ctx.strokeRect(t.crop.x, t.crop.y, t.crop.w, t.crop.h);
-        ctx.setLineDash([]);
-      }
-      ctx.restore();
-      // 文字は鏡にしない
-      ctx.font = `bold ${Math.round(vw / 28)}px sans-serif`;
-      for (const id of ['A', 'B'] as TrackId[]) {
-        const t = tracker.tracks[id];
-        if (!t.crop) continue;
-        const role = roleOfTrack(id);
-        const x = mirror ? vw - t.crop.x - t.crop.w : t.crop.x;
-        ctx.fillStyle = role === 'host' ? '#2F6FEB' : '#E8452C';
-        ctx.fillRect(x, t.crop.y, ctx.measureText(lesson.roleLabels[role]).width + 32, vw / 22);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(lesson.roleLabels[role] + (t.lostSince ? '（見失い中）' : ''), x + 16, t.crop.y + vw / 30);
-      }
+      if (canvas.current) drawCameraDebug(canvas.current, { swapped, mirror, labels: lesson.roleLabels });
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);

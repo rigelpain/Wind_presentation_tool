@@ -1,5 +1,6 @@
 // キーボードとプレゼン用リモコンの操作。リモコンは多くが → ← / PageDown PageUp / B か . を送る。
 import { useEffect } from 'react';
+import { effectiveLesson } from './lesson';
 import { boardCellsOf } from './registry';
 import { dispatch, getStore } from './store';
 
@@ -17,7 +18,8 @@ export function useKeys(local: LocalKeys) {
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const store = getStore();
-      const scene = store.lesson.scenes[store.getState().sceneIndex];
+      const st = store.getState();
+      const scene = effectiveLesson(store.lesson, st.settings).scenes[st.sceneIndex];
       const onBoard = scene ? boardCellsOf(scene) > 0 : false;
       if (onBoard && BOARD_KEYS.has(e.key)) {
         e.preventDefault();
@@ -81,9 +83,9 @@ export const KEY_HELP: [string, string][] = [
   ['R', 'もう一度（3秒提示など）'],
   ['B / .', '画面を黒にする・戻す'],
   ['数字 → Enter', '数のボードに入れる（↑↓でセルを移る、* で印）'],
-  ['F', '全画面（舞台の窓）'],
-  ['C', 'カメラの準備（舞台の窓）'],
-  ['P', '発表者用の画面を開く（舞台の窓）'],
+  ['F', '全画面（表示画面）'],
+  ['C', 'カメラの準備（表示画面。コントロール画面の「カメラ・ワイプ」でもできる）'],
+  ['P', 'コントロール画面を開く（表示画面）'],
   ['U', '写真の読み込み'],
   ['?', '操作の一覧'],
 ];

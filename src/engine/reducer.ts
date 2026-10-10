@@ -1,12 +1,26 @@
 // 状態の変え方。演出の記録（種明かし用）もここで一緒に行う。
+import { DEFAULT_SETTINGS, effectiveLesson, orderedScenes } from './lesson';
 import { boardCellsOf, stepsOf } from './registry';
-import type { Action, BoardState, EffectKind, Lesson, ShowState, WipeMode } from './types';
+import type { Action, BoardState, EffectKind, Lesson, MusicState, Scene, ShowSettings, ShowState, WipeMode } from './types';
 
-/** 黒を挟む切り替えの時間（舞台の窓が使う）。黒に落ちる → 次の場面が明ける */
-export const DIP_OUT_MS = 220;
-export const DIP_IN_MS = 360;
+export const DEFAULT_MUSIC: MusicState = {
+  trackId: null,
+  playing: false,
+  startedAt: 0,
+  offsetSec: 0,
+  volume: 0.6,
+  loop: true,
+  fadeMs: 1500,
+  output: 'display',
+};
 
-export function initialState(lesson: Lesson): ShowState {
+/** いまの曲の位置（秒） */
+export function musicPosition(m: MusicState, now = Date.now()): number {
+  return m.playing ? m.offsetSec + Math.max(0, now - m.startedAt) / 1000 : m.offsetSec;
+}
+
+export function initialState(base: Lesson, settings: ShowSettings = DEFAULT_SETTINGS): ShowState {
+  const lesson = effectiveLesson(base, settings);
   const first = lesson.scenes[0];
   return {
     lessonId: lesson.id,
@@ -27,6 +41,8 @@ export function initialState(lesson: Lesson): ShowState {
     openLoops: [],
     boards: {},
     sceneData: {},
+    settings,
+    music: DEFAULT_MUSIC,
     rev: 0,
   };
 }
@@ -56,8 +72,8 @@ function enterScene(s: ShowState, lesson: Lesson, index: number, now: number, at
     ...s,
     sceneIndex: index,
     step: atEnd ? steps.length - 1 : 0,
-    // 黒を挟むときは、黒が明けた時刻を段階の始まりにする（時間で動く部品が黒の最中に始まらないように）
-    stepAt: !atEnd && scene.transition === 'black' ? now + DIP_OUT_MS + DIP_IN_MS : now,
+    // 切り替えの演出があるときは、それが終わった時刻を段階の始まりにする（時間で動く部品が切り替えの最中に始まらないように）
+    stepAt: !atEnd && scene.transition && scene.transition !== 'cut' ? now + s.settings.transitionMs : now,
     replay: 0,
     blackout: false,
   };
@@ -68,7 +84,9 @@ function enterScene(s: ShowState, lesson: Lesson, index: number, now: number, at
   }
   const kinds: EffectKind[] = [];
   if (scene.transition === 'black') kinds.push('blackout');
+  if (scene.transition === 'slide') kinds.push('scene-move');
   next = log(next, kinds, now, lesson);
+  next = { ...next, music: musicCue(next.music, scene, now) };
   if (scene.wipe) next = setWipe(next, scene.wipe, now, lesson);
   if (scene.opensLoop && !next.openLoops.some((l) => l.id === scene.opensLoop!.id)) {
     next = { ...next, openLoops: [...next.openLoops, { ...scene.opensLoop, openedAt: now }] };
@@ -80,6 +98,32 @@ function enterScene(s: ShowState, lesson: Lesson, index: number, now: number, at
   }
   next = log(next, steps[0] ?? [], now, lesson);
   return next;
+}
+
+/** 場面に入ったときの音楽 */
+function musicCue(m: MusicState, scene: Scene, now: number): MusicState {
+  if (!scene.music) return m;
+  if (scene.music === 'stop') return m.playing ? { ...m, playing: false, offsetSec: musicPosition(m, now) } : m;
+  if (m.trackId === scene.music && m.playing) return m;
+  return { ...m, trackId: scene.music, playing: true, startedAt: now, offsetSec: 0 };
+}
+
+/** 設定が変わっても、いま映している場面（と段階）はそのままにする */
+function withSettings(s: ShowState, base: Lesson, settings: ShowSettings): ShowState {
+  const before = effectiveLesson(base, s.settings);
+  const currentId = before.scenes[s.sceneIndex]?.id;
+  const after = effectiveLesson(base, settings);
+  let index = after.scenes.findIndex((sc) => sc.id === currentId);
+  let step = s.step;
+  if (index < 0) {
+    // いまの場面を飛ばすことにしたら、並びの上でその次の場面へ
+    const full = orderedScenes(base, settings);
+    const pos = full.findIndex((o) => o.scene.id === currentId);
+    const nextOne = full.slice(pos + 1).find((o) => !o.skipped) ?? [...full].reverse().find((o) => !o.skipped);
+    index = nextOne ? nextOne.index : 0;
+    step = 0;
+  }
+  return { ...s, settings, sceneIndex: Math.max(0, index), step };
 }
 
 function board(s: ShowState, sceneId: string, cells: number): BoardState {
@@ -110,8 +154,9 @@ function boardKey(b: BoardState, key: string, cells: number): BoardState {
   return b;
 }
 
-export function reduce(s: ShowState, action: Action, lesson: Lesson): ShowState {
+export function reduce(s: ShowState, action: Action, base: Lesson): ShowState {
   const now = Date.now();
+  const lesson = effectiveLesson(base, s.settings);
   const scene = lesson.scenes[s.sceneIndex];
   const steps = scene ? stepsOf(scene) : [[]];
 
@@ -141,8 +186,15 @@ export function reduce(s: ShowState, action: Action, lesson: Lesson): ShowState 
     }
     case 'start':
       return { ...s, startedAt: s.startedAt ?? now };
-    case 'reset':
-      return { ...initialState(lesson), wipe: { ...initialState(lesson).wipe, swapped: s.wipe.swapped, mirror: s.wipe.mirror, showLabels: s.wipe.showLabels } };
+    case 'reset': {
+      // 進み具合と記録だけを消す。並び・設定・カメラの向きは残す
+      const fresh = initialState(base, s.settings);
+      return {
+        ...fresh,
+        wipe: { ...fresh.wipe, swapped: s.wipe.swapped, mirror: s.wipe.mirror, showLabels: s.wipe.showLabels },
+        music: { ...s.music, playing: false, offsetSec: 0 },
+      };
+    }
     case 'wipe':
       return setWipe(s, action.mode, now, lesson);
     case 'toggle-explain':
@@ -170,6 +222,31 @@ export function reduce(s: ShowState, action: Action, lesson: Lesson): ShowState 
     }
     case 'scene-data':
       return { ...s, sceneData: { ...s.sceneData, [action.sceneId]: action.value } };
+    case 'settings':
+      return withSettings(s, base, { ...s.settings, ...action.patch });
+    case 'scene-override': {
+      const cur = { ...(s.settings.overrides[action.sceneId] ?? {}), ...action.patch };
+      for (const k of Object.keys(cur) as (keyof typeof cur)[]) if (cur[k] === undefined) delete cur[k];
+      const overrides = { ...s.settings.overrides, [action.sceneId]: cur };
+      if (Object.keys(cur).length === 0) delete overrides[action.sceneId];
+      return withSettings(s, base, { ...s.settings, overrides });
+    }
+    case 'music-play': {
+      const m = s.music;
+      const id = action.trackId ?? m.trackId;
+      if (!id) return s;
+      if (id !== m.trackId) return { ...s, music: { ...m, trackId: id, playing: true, startedAt: now, offsetSec: 0 } };
+      if (m.playing) return s;
+      return { ...s, music: { ...m, playing: true, startedAt: now } };
+    }
+    case 'music-pause':
+      return s.music.playing ? { ...s, music: { ...s.music, playing: false, offsetSec: musicPosition(s.music, now) } } : s;
+    case 'music-stop':
+      return { ...s, music: { ...s.music, playing: false, offsetSec: 0 } };
+    case 'music-seek':
+      return { ...s, music: { ...s.music, offsetSec: Math.max(0, action.sec), startedAt: now } };
+    case 'music-set':
+      return { ...s, music: { ...s.music, ...action.patch } };
   }
 }
 

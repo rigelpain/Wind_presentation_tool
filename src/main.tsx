@@ -2,7 +2,7 @@ import { StrictMode, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createStore } from './engine/store';
 import { pickLesson } from './lessons';
-import { Presenter } from './presenter/Presenter';
+import { Control } from './control/Control';
 import { registerScenes } from './scenes';
 import { Stage } from './stage/Stage';
 import './styles.css';
@@ -23,12 +23,13 @@ function useHash() {
 
 function App() {
   const hash = useHash();
-  if (hash.startsWith('#/presenter')) {
-    document.title = `発表者 — ${lesson.title}`;
-    return <Presenter lesson={lesson} />;
+  // #/control（と前の名前 #/presenter）がコントロール画面。それ以外は表示画面
+  if (hash.startsWith('#/control') || hash.startsWith('#/presenter')) {
+    document.title = `コントロール — ${lesson.title}`;
+    return <Control />;
   }
   document.title = lesson.title;
-  return <Stage lesson={lesson} />;
+  return <Stage />;
 }
 
 createRoot(document.getElementById('root')!).render(

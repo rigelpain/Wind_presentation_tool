@@ -24,6 +24,7 @@ export const EFFECTS: Record<EffectKind, EffectInfo> = {
   'loop-close': { label: 'あとで答えを回収した', why: '待っていた答えは、ズレが大きく効く', color: '#0F766E' },
   unlock: { label: '進み具合を見せた', why: 'ゴールまでの距離が見えると、続けたくなる', color: '#6B7280' },
   'camera-hide': { label: 'カメラを隠した', why: '見えない間に、何かが変わるかもしれない', color: '#9F1239' },
+  'scene-move': { label: '画面を動かして切り替えた', why: '動きの向きで、話が進んだと分かる', color: '#4B5563' },
 };
 
 export const EFFECT_ORDER: EffectKind[] = [
@@ -38,4 +39,5 @@ export const EFFECT_ORDER: EffectKind[] = [
   'loop-close',
   'unlock',
   'camera-hide',
+  'scene-move',
 ];

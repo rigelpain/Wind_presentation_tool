@@ -37,18 +37,19 @@ export function useTracker() {
   );
 }
 
-export function WipeLayer({ state, lesson }: { state: ShowState; lesson: Lesson }) {
+export function WipeLayer({ state, lesson, placeholder }: { state: ShowState; lesson: Lesson; placeholder?: string }) {
   const canvases = useRef<Record<Role, HTMLCanvasElement | null>>({ host: null, guest: null });
   const { mode, swapped, mirror, showLabels } = state.wipe;
   const place = placements(mode);
   useTracker();
-  const running = tracker.status === 'running';
+  const running = !placeholder && tracker.status === 'running';
+  const k = state.settings.wipeScale;
 
   useEffect(() => {
     let raf = 0;
     const draw = () => {
       raf = requestAnimationFrame(draw);
-      if (tracker.status !== 'running') return;
+      if (placeholder || tracker.status !== 'running') return;
       for (const role of ['host', 'guest'] as Role[]) {
         const c = canvases.current[role];
         if (!c) continue;
@@ -68,19 +69,20 @@ export function WipeLayer({ state, lesson }: { state: ShowState; lesson: Lesson 
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [swapped, mirror]);
+  }, [swapped, mirror, placeholder]);
 
   return (
     <div className="wipe-layer" aria-hidden>
       {(['host', 'guest'] as Role[]).map((role) => {
         const p = place[role];
-        const height = Math.round(p.width / WIPE_ASPECT);
+        const width = Math.round(p.width * k);
+        const height = Math.round(width / WIPE_ASPECT);
         const side = role === 'host' ? { left: MARGIN } : { right: MARGIN };
         return (
           <div
             key={role}
             className={`wipe ${p.visible ? '' : 'wipe--hidden'}`}
-            style={{ ...side, bottom: MARGIN, width: p.width, height }}
+            style={{ ...side, bottom: MARGIN, width, height }}
           >
             <canvas
               ref={(el) => {
@@ -89,7 +91,7 @@ export function WipeLayer({ state, lesson }: { state: ShowState; lesson: Lesson 
               width={960}
               height={Math.round(960 / WIPE_ASPECT)}
             />
-            {!running && <div className="wipe__empty">カメラ待ち</div>}
+            {!running && <div className="wipe__empty">{placeholder ?? 'カメラ待ち'}</div>}
             {showLabels && <div className="wipe__label">{lesson.roleLabels[role]}</div>}
           </div>
         );

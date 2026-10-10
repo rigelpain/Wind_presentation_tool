@@ -10,8 +10,14 @@ export type WipeMode =
 
 export type Role = 'host' | 'guest';
 
-/** 場面の切り替わり方。black は「画面が変わる前に黒が入る」演出として記録する。 */
-export type Transition = 'cut' | 'black';
+/**
+ * 場面の切り替わり方。
+ * - cut: すぐ切り替える
+ * - black: 黒を挟む（「画面が変わる前に黒が入る」演出として記録する）
+ * - fade: 前の場面と重ねて切り替える
+ * - slide: 次の場面が右から入る（「画面を動かして切り替えた」として記録する）
+ */
+export type Transition = 'cut' | 'black' | 'fade' | 'slide';
 
 /**
  * 1つの場面。kind で部品（React の部品）を選び、props で中身を渡す。
@@ -35,6 +41,8 @@ export interface Scene {
   opensLoop?: { id: string; text: string };
   /** この場面で問いを回収する（opensLoop の id） */
   closesLoop?: string;
+  /** この場面に入ったときの音楽。曲の id で流し始め、'stop' で止める。省くとそのまま */
+  music?: string;
   props?: Record<string, unknown>;
 }
 
@@ -60,7 +68,8 @@ export type EffectKind =
   | 'loop-open' // 「答えはあとで」と引いた
   | 'loop-close' // あとで回収した
   | 'unlock' // 進み具合を見せた・次を解放した
-  | 'camera-hide'; // カメラを隠した
+  | 'camera-hide' // カメラを隠した
+  | 'scene-move'; // 画面を動かして切り替えた
 
 export interface EffectEvent {
   kind: EffectKind;
@@ -72,6 +81,50 @@ export interface OpenLoop {
   id: string;
   text: string;
   openedAt: number;
+}
+
+/** 場面ごとの上書き（コントロール画面で変える）。省いた項目は授業のデータのまま */
+export interface SceneOverride {
+  transition?: Transition;
+  wipe?: WipeMode;
+  /** 曲の id で流し始め、'stop' で止める、'' で授業のデータのまま */
+  music?: string;
+}
+
+/** コントロール画面で変える設定。授業のデータ（Lesson）には書き戻さず、状態に持つ */
+export interface ShowSettings {
+  /** 場面の並び（scene id）。null なら授業のデータの順 */
+  order: string[] | null;
+  /** 飛ばす場面の id */
+  skipped: string[];
+  overrides: Record<string, SceneOverride>;
+  /** 場面に transition がないときの切り替わり方 */
+  defaultTransition: Transition;
+  /** 切り替えの長さ（ms）。黒・重ね・横すべりに使う */
+  transitionMs: number;
+  /** 授業の長さ（分）。null なら授業のデータのまま */
+  durationMin: number | null;
+  /** 表示画面に小さく出す時計 */
+  stageClock: 'none' | 'remaining' | 'elapsed' | 'time';
+  /** ワイプの大きさ（1 が標準。0.6〜1.6） */
+  wipeScale: number;
+  /** 顔の切り出しの寄り（1 が標準。大きいほど顔に寄る。0.6〜1.8） */
+  wipeZoom: number;
+}
+
+export interface MusicState {
+  trackId: string | null;
+  playing: boolean;
+  /** 再生を始めた（再開した）時刻。位置は offsetSec + (今 - startedAt) */
+  startedAt: number;
+  offsetSec: number;
+  /** 0〜1 */
+  volume: number;
+  loop: boolean;
+  /** 流し始め・止めるときに音量を変える時間（ms） */
+  fadeMs: number;
+  /** 音を出す窓。画面共有で音を送るなら共有している方 */
+  output: 'display' | 'control';
 }
 
 export interface ShowState {
@@ -101,6 +154,8 @@ export interface ShowState {
   boards: Record<string, BoardState>;
   /** 部品ごとの自由な値（scene id → 値）。リロードしても残る */
   sceneData: Record<string, unknown>;
+  settings: ShowSettings;
+  music: MusicState;
   /** 状態の版。窓のあいだの同期で新しい方を採る */
   rev: number;
 }
@@ -132,4 +187,14 @@ export type Action =
   | { type: 'effect'; kind: EffectKind }
   | { type: 'board-key'; key: string }
   | { type: 'board-cursor'; index: number }
-  | { type: 'scene-data'; sceneId: string; value: unknown };
+  | { type: 'scene-data'; sceneId: string; value: unknown }
+  /** 設定を変える。並び・飛ばす場面が変わっても、いまの場面はそのまま */
+  | { type: 'settings'; patch: Partial<ShowSettings> }
+  /** 場面ごとの上書きを変える。値に undefined を入れるとその項目を授業のデータに戻す */
+  | { type: 'scene-override'; sceneId: string; patch: SceneOverride }
+  /** 曲を流す。trackId を省くと、いまの曲を止めたところから */
+  | { type: 'music-play'; trackId?: string }
+  | { type: 'music-pause' }
+  | { type: 'music-stop' }
+  | { type: 'music-seek'; sec: number }
+  | { type: 'music-set'; patch: Partial<Pick<MusicState, 'volume' | 'loop' | 'fadeMs' | 'output'>> };

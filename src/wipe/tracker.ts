@@ -44,10 +44,10 @@ class Track {
   }
 
   /** 顔の枠から、肩までが入る切り出し枠の中心と高さを作り、ならす */
-  smoothTarget(face: Box, tSec: number): { cx: number; cy: number; h: number } {
+  smoothTarget(face: Box, tSec: number, zoom: number): { cx: number; cy: number; h: number } {
     const cx = face.x + face.w / 2;
     const cy = face.y + face.h * 0.78;
-    const h = face.h * 2.5;
+    const h = (face.h * 2.5) / zoom;
     return { cx: this.fx.filter(cx, tSec), cy: this.fy.filter(cy, tSec), h: this.fh.filter(h, tSec) };
   }
 }
@@ -87,6 +87,8 @@ class FaceTracker {
   mirror = false;
   readonly tracks: Record<TrackId, Track> = { A: new Track('A'), B: new Track('B') };
   fps = 0;
+  /** 顔への寄り（1 が標準）。コントロール画面の設定 */
+  zoom = 1;
 
   private stream: MediaStream | null = null;
   private detector: FaceDetector | null = null;
@@ -116,6 +118,11 @@ class FaceTracker {
 
   private emit() {
     this.listeners.forEach((fn) => fn());
+  }
+
+  /** 状態が変わったことを知らせる（コントロール画面への中継に使う） */
+  notify() {
+    this.emit();
   }
 
   get width() {
@@ -305,7 +312,7 @@ class FaceTracker {
     t.raw = face;
     t.seen = true;
     t.lostSince = null;
-    const s = t.smoothTarget(face, now / 1000);
+    const s = t.smoothTarget(face, now / 1000, this.zoom);
     const target = clampCrop(s.cx, s.cy, s.h, this.width, this.height);
     t.crop = t.crop ? lerpBox(t.crop, target, 1) : target;
   }

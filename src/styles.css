@@ -58,17 +58,25 @@ button:disabled {
   cursor: default;
 }
 
-/* ---------- 舞台 ---------- */
-.stage-viewport {
+/* ---------- 表示画面と舞台 ---------- */
+.display {
   position: fixed;
   inset: 0;
-  overflow: hidden;
   background: #000;
   cursor: none;
 }
-.stage-viewport.is-pointer,
-.stage-viewport:has(.panel-backdrop) {
+.display.is-pointer,
+.display:has(.panel-backdrop) {
   cursor: auto;
+}
+.stage-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+.stage-viewport--preview {
+  pointer-events: none;
 }
 .stage {
   position: absolute;
@@ -81,18 +89,83 @@ button:disabled {
 .stage__scene {
   position: absolute;
   inset: 0;
+  background: var(--paper);
 }
+.stage__end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 96px;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+/* 切り替え。長さは --t（コントロール画面の設定） */
 .dip {
   position: absolute;
   inset: 0;
   background: #000;
-  opacity: 0;
   pointer-events: none;
-  transition-property: opacity;
-  transition-timing-function: ease;
+  z-index: 40;
+  opacity: 0;
+  animation: dip var(--t) ease both;
 }
-.dip--out {
-  opacity: 1;
+@keyframes dip {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.stage__scene--in-fade {
+  animation: fade-in var(--t) ease both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.stage__scene--in-slide {
+  animation: slide-in var(--t) var(--ease) both;
+}
+.stage__scene--out-slide {
+  animation: slide-out var(--t) var(--ease) both;
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+.stage-clock {
+  position: absolute;
+  top: 28px;
+  left: 40px;
+  z-index: 20;
+  background: rgba(20, 20, 20, 0.82);
+  color: #fff;
+  font-size: 36px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  padding: 6px 22px;
+  border-radius: 12px;
 }
 .blackout {
   position: absolute;
@@ -522,155 +595,232 @@ button:disabled {
   font-family: ui-monospace, monospace;
 }
 
-/* ---------- 発表者用の画面 ---------- */
-.presenter {
+/* ---------- コントロール画面 ---------- */
+.control {
   min-height: 100%;
+  height: 100vh;
   background: #1b1a18;
   color: #f1ede4;
   display: flex;
   flex-direction: column;
+  font-size: 14px;
 }
-.p-top {
+.control button {
+  background: #2c2a25;
+  color: #f1ede4;
+  border-color: #46433b;
+  font-size: 14px;
+}
+.control button:hover {
+  border-color: #f1ede4;
+}
+.control button.primary {
+  background: #f1ede4;
+  color: #1b1a18;
+  border-color: #f1ede4;
+}
+.control button.is-on {
+  background: #f1ede4;
+  color: #1b1a18;
+  border-color: #f1ede4;
+  font-weight: 800;
+}
+.control button.danger {
+  border-color: #b91c1c;
+  color: #fca5a5;
+}
+.control input,
+.control select {
+  font: inherit;
+  background: #2c2a25;
+  color: #f1ede4;
+  border: 1px solid #46433b;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.c-top {
   display: flex;
-  gap: 28px;
+  gap: 22px;
   align-items: stretch;
-  padding: 16px 24px;
+  padding: 10px 18px;
   border-bottom: 1px solid #333;
+  flex-wrap: wrap;
 }
-.p-clock {
+.c-clock {
   display: flex;
   flex-direction: column;
 }
-.p-clock__label {
-  font-size: 13px;
+.c-clock__label {
+  font-size: 12px;
   color: #a9a395;
 }
-.p-clock__value {
-  font-size: 44px;
+.c-clock__value {
+  font-size: 34px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
-.p-clock.is-warn .p-clock__value {
+.c-clock--time .c-clock__value {
+  color: #cfc8b8;
+}
+.c-clock.is-warn .c-clock__value {
   color: #fbbf24;
 }
-.p-clock.is-hidden {
+.c-clock.is-hidden {
   background: #9f1239;
   border-radius: 10px;
-  padding: 4px 16px;
+  padding: 2px 14px;
 }
-.p-clock.is-hidden .p-clock__label {
+.c-clock.is-hidden .c-clock__label {
   color: #fecdd3;
 }
-.p-top__actions {
+.c-top__actions {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .badge {
-  padding: 6px 12px;
+  padding: 5px 10px;
   border-radius: 8px;
   font-weight: 700;
+  background: #2c2a25;
 }
 .badge--black {
   background: #000;
   border: 2px solid #fff;
 }
-.p-main {
+.c-main {
   flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 24px;
-  padding: 20px 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 520px);
+  gap: 18px;
+  padding: 14px 18px;
 }
-.p-label {
+.c-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+}
+.c-previews {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.c-preview {
+  margin: 0;
+}
+.c-preview figcaption {
+  font-size: 13px;
   color: #a9a395;
-  font-size: 14px;
-  margin-right: 8px;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.p-now h1 {
-  font-size: 40px;
-  margin: 8px 0 12px;
+.c-preview--now figcaption {
+  color: #f1ede4;
+  font-weight: 700;
 }
-.p-notes {
-  font-size: 26px;
+.c-preview__box {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+  outline: 3px solid #46433b;
+}
+.c-preview--now .c-preview__box {
+  outline-color: #e8452c;
+}
+.c-preview__same {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a9a395;
+  font-size: 15px;
+}
+.c-notes {
+  font-size: 22px;
   line-height: 1.6;
   white-space: pre-wrap;
   background: #26241f;
   border-radius: 10px;
-  padding: 16px 20px;
-  min-height: 160px;
+  padding: 14px 18px;
+  min-height: 90px;
 }
-.p-next {
-  margin-top: 16px;
-  font-size: 22px;
-  color: #d8d2c4;
-}
-.p-nav {
-  margin-top: 20px;
+.c-nav {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
-.p-nav button {
-  font-size: 20px;
-  padding: 12px 22px;
+.c-nav button {
+  font-size: 18px;
+  padding: 10px 18px;
 }
-.p-side h3 {
-  font-size: 14px;
+.c-nav__next {
+  flex: 1;
+}
+.c-log summary {
+  cursor: pointer;
   color: #a9a395;
-  margin: 18px 0 8px;
 }
-.p-side h3:first-child {
-  margin-top: 0;
-}
-.p-wipes,
-.p-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.p-wipes button.is-on {
-  background: #f1ede4;
-  color: #1b1a18;
-  font-weight: 800;
-  border-color: #f1ede4;
-}
-.p-scenes {
+.c-log ul {
   list-style: none;
   padding: 0;
-  margin: 0;
-  max-height: 34vh;
-  overflow: auto;
-}
-.p-scenes button {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  background: transparent;
-  color: inherit;
-  border: 0;
-  border-radius: 6px;
-  padding: 6px 8px;
-  text-align: left;
-}
-.p-scenes li.is-done button {
-  color: #7d786d;
-}
-.p-scenes li.is-on button {
-  background: #f1ede4;
-  color: #1b1a18;
-  font-weight: 800;
-}
-.p-effects {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  margin: 6px 0 0;
   font-size: 13px;
   color: #cfc8b8;
   line-height: 1.7;
 }
+.c-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 10px;
+}
+.c-tabs {
+  display: flex;
+  gap: 4px;
+}
+.c-tabs button {
+  flex: 1;
+  padding: 8px 6px;
+}
+.c-tabbody {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #22201c;
+  border-radius: 10px;
+  padding: 14px;
+}
+.c-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.c-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.c-panel h3 {
+  font-size: 13px;
+  color: #a9a395;
+  margin: 6px 0 0;
+}
+.control .hint {
+  color: #a9a395;
+}
 
 /* 発表者だけが使う操作（3秒提示の秒数など）は、マウスを動かしたときだけ出す */
-.stage-viewport:not(.is-pointer) .flash__seconds {
+.display:not(.is-pointer) .flash__seconds,
+.stage-viewport--preview .flash__seconds {
   visibility: hidden;
 }

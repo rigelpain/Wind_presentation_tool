@@ -1,7 +1,8 @@
 // 状態の置き場。同じPCの窓どうし（舞台と発表者用）は BroadcastChannel で同期し、
 // localStorage に書いておくのでリロードしても今の場面に戻れる。
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { initialState, reduce } from './reducer';
+import { DEFAULT_SETTINGS, effectiveLesson } from './lesson';
+import { DEFAULT_MUSIC, initialState, reduce } from './reducer';
 import type { Action, Lesson, ShowState } from './types';
 
 type Message = { type: 'state'; state: ShowState; from: string } | { type: 'hello'; from: string };
@@ -80,12 +81,16 @@ export class ShowStore {
       const s = JSON.parse(raw) as ShowState;
       if (s.lessonId !== this.lesson.id) return null;
       // 授業の場面が減っていたら範囲に収める
-      const fresh = initialState(this.lesson);
+      const settings = { ...DEFAULT_SETTINGS, ...s.settings };
+      const fresh = initialState(this.lesson, settings);
+      const scenes = effectiveLesson(this.lesson, settings).scenes.length;
       return {
         ...fresh,
         ...s,
+        settings,
         wipe: { ...fresh.wipe, ...s.wipe },
-        sceneIndex: Math.min(s.sceneIndex, this.lesson.scenes.length - 1),
+        music: { ...DEFAULT_MUSIC, ...s.music },
+        sceneIndex: Math.min(s.sceneIndex, scenes - 1),
       };
     } catch {
       return null;
@@ -108,6 +113,12 @@ export function getStore(): ShowStore {
 export function useShow(): ShowState {
   const s = getStore();
   return useSyncExternalStore(s.subscribe, s.getState);
+}
+
+/** コントロール画面の設定を当てた、実際に進む授業 */
+export function useLesson(): Lesson {
+  const s = useShow();
+  return effectiveLesson(getStore().lesson, s.settings);
 }
 
 export function dispatch(action: Action): void {
