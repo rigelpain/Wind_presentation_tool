@@ -1,0 +1,88 @@
+// 見本の授業。10/16 の授業の中身は作り直し中なので、流れの骨だけを置く。
+// 実際の授業（人や建物の写真を使うもの）は src/lessons/private/ に置く（リポジトリに入れない）。
+import type { Lesson } from '../engine/types';
+
+export const demo: Lesson = {
+  id: 'demo',
+  title: '見えてるのに、見えてない。（見本）',
+  durationMin: 30,
+  roleLabels: { host: '進行', guest: '解説' },
+  scenes: [
+    {
+      id: 'opening',
+      kind: 'title',
+      title: '題',
+      wipe: 'both',
+      plannedSec: 60,
+      notes: '接続を確かめる。2人で名乗る。',
+      props: { kicker: '認知科学 × 情報デザイン', title: '見えてるのに、\n**見えてない。**', subtitle: '30分で、世界の見え方を1段階上げる' },
+    },
+    {
+      id: 'promise',
+      kind: 'text',
+      title: '今日やること',
+      transition: 'black',
+      plannedSec: 40,
+      notes: '1行ずつ → で出す。',
+      props: { heading: '今日の30分', build: true, lines: ['自分の目で **確かめる**', '紙とペンで **作る**', '大学の学びに **つなげる**'] },
+    },
+    {
+      id: 'explain',
+      kind: 'text',
+      title: '解説（担当教員のワイプを大きく）',
+      wipe: 'explain',
+      plannedSec: 90,
+      notes: '解説モード。担当教員が話す。',
+      props: { lines: ['見えてるのは、**脳が選んだぶんだけ**。'], align: 'center', size: 'xl' },
+    },
+    {
+      id: 'works',
+      kind: 'media',
+      title: '成果物を見せる',
+      wipe: 'both',
+      transition: 'black',
+      plannedSec: 60,
+      notes: '→ で1枚ずつ。素材は public/private/ に置いて src を書き換える。',
+      props: { items: [{ slot: 'team-1', caption: '写真の読み込み（U）で入れた1枚目' }, { slot: 'team-2', caption: '2枚目' }] },
+    },
+    {
+      id: 'hide',
+      kind: 'text',
+      title: 'カメラを隠す（変化盲の仕込み）',
+      wipe: 'hidden',
+      plannedSec: 30,
+      notes: 'ワイプが消えている間に、担当教員が顔のまわりを1か所変える。発表者用の画面に消えている秒数が出る。',
+      props: { lines: ['（ここで全画面の課題を出す）'], align: 'center' },
+    },
+    {
+      id: 'back',
+      kind: 'text',
+      title: 'カメラを戻す',
+      wipe: 'both',
+      plannedSec: 30,
+      notes: '「先生、さっきから何か変わりました？」',
+      props: { lines: ['先生、さっきから\n**何か変わりました？**'], align: 'center', size: 'xl' },
+    },
+    {
+      id: 'reveal-tool',
+      kind: 'effect-log',
+      title: 'ツールの種明かし',
+      transition: 'black',
+      plannedSec: 120,
+      notes: '設計の話として明かす（露悪的にしない）。→ で1行ずつ、一覧、時間軸。',
+      props: {
+        heading: 'このツールの作り方',
+        intro: ['ゴールは「**楽しい学び**」', 'そのために、まず **注意を集めて**、世界観を知ってもらう', '30分で直感的にできる方法 × できること × 楽しいこと', 'その重なりが、**このツール**になりました'],
+      },
+    },
+    {
+      id: 'closing',
+      kind: 'title',
+      title: '締め',
+      wipe: 'both',
+      transition: 'black',
+      plannedSec: 60,
+      props: { title: '見えてるのは、\n**脳が選んだぶんだけ。**' },
+    },
+  ],
+};

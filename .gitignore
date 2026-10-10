@@ -1,0 +1,10 @@
+node_modules
+dist
+.DS_Store
+*.local
+# MediaPipe の wasm は npm install のときに写す（scripts/copy-wasm.mjs）
+public/mediapipe/
+# 授業の実データ（人や建物が写る写真、授業の台本）はリポジトリに入れない
+public/private/
+src/lessons/private/
+.claude/settings.local.json
