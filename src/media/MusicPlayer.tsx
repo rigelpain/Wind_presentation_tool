@@ -2,7 +2,7 @@
 // 位置は状態（startedAt と offsetSec）から計算するので、どちらの窓で操作しても、リロードしても合う。
 import { useEffect, useRef, useState } from 'react';
 import { musicPosition } from '../engine/reducer';
-import { useShow } from '../engine/store';
+import { dispatch, useShow } from '../engine/store';
 import type { MusicState } from '../engine/types';
 import { useTracks } from './audio';
 
@@ -33,6 +33,7 @@ export function MusicPlayer({ role }: { role: 'display' | 'control' }) {
     let fadeOutFrom: number | null = null;
     let wasPlaying = false;
     let blocked = false;
+    let endedSent = false;
 
     const tick = () => {
       const m = music.current;
@@ -48,6 +49,13 @@ export function MusicPlayer({ role }: { role: 'display' | 'control' }) {
       let pos = musicPosition(m, now);
       const ended = !m.loop && dur > 0 && pos >= dur;
       if (m.loop && dur > 0) pos %= dur;
+      // くり返さない曲が最後まで流れたら、止めた状態にする（鳴らしている窓だけが送る）
+      if (ended && m.playing) {
+        if (!endedSent) dispatch({ type: 'music-stop' });
+        endedSent = true;
+      } else {
+        endedSent = false;
+      }
 
       if (m.playing && !ended) {
         fadeOutFrom = null;

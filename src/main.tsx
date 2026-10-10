@@ -8,6 +8,10 @@ import { Stage } from './stage/Stage';
 import './styles.css';
 
 registerScenes();
+
+// 受け口の外にファイルを落としても、ブラウザがそのファイルを開いて画面が移らないようにする
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => e.preventDefault());
 const lesson = pickLesson();
 createStore(lesson);
 
