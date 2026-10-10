@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { KEY_HELP, useKeys } from '../engine/keys';
 import { getKind } from '../engine/registry';
+import { DIP_IN_MS, DIP_OUT_MS } from '../engine/reducer';
 import { dispatch, getStore, useShow } from '../engine/store';
 import type { Lesson } from '../engine/types';
 import { setSnapshot } from '../media/snapshots';
@@ -12,8 +13,6 @@ import { WipeLayer } from '../wipe/WipeLayer';
 
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
-const DIP_OUT_MS = 220;
-const DIP_IN_MS = 360;
 
 function useFitScale() {
   const [scale, setScale] = useState(1);

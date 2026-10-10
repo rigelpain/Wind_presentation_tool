@@ -669,3 +669,8 @@ button:disabled {
   color: #cfc8b8;
   line-height: 1.7;
 }
+
+/* 発表者だけが使う操作（3秒提示の秒数など）は、マウスを動かしたときだけ出す */
+.stage-viewport:not(.is-pointer) .flash__seconds {
+  visibility: hidden;
+}

@@ -2,6 +2,10 @@
 import { boardCellsOf, stepsOf } from './registry';
 import type { Action, BoardState, EffectKind, Lesson, ShowState, WipeMode } from './types';
 
+/** 黒を挟む切り替えの時間（舞台の窓が使う）。黒に落ちる → 次の場面が明ける */
+export const DIP_OUT_MS = 220;
+export const DIP_IN_MS = 360;
+
 export function initialState(lesson: Lesson): ShowState {
   const first = lesson.scenes[0];
   return {
@@ -52,7 +56,8 @@ function enterScene(s: ShowState, lesson: Lesson, index: number, now: number, at
     ...s,
     sceneIndex: index,
     step: atEnd ? steps.length - 1 : 0,
-    stepAt: now,
+    // 黒を挟むときは、黒が明けた時刻を段階の始まりにする（時間で動く部品が黒の最中に始まらないように）
+    stepAt: !atEnd && scene.transition === 'black' ? now + DIP_OUT_MS + DIP_IN_MS : now,
     replay: 0,
     blackout: false,
   };
