@@ -1,0 +1,51 @@
+/* 「切り替えと時計」の枠。クラス名は部品名（settings）で始める */
+.settings__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings__options--row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.settings__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings__option > button {
+  flex: none;
+  width: 112px;
+}
+.settings__option .hint,
+.c-panel > .hint {
+  font-size: 13px;
+}
+.settings__slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.settings__slider input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  accent-color: #f1ede4;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.settings__value {
+  min-width: 56px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.settings__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings__minutes {
+  width: 88px;
+}

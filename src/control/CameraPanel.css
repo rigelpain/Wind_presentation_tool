@@ -1,0 +1,108 @@
+/* カメラ・ワイプの枠（コントロール画面の暗い地に合わせる）。部品の外の決まりは styles.css の .control に任せる */
+
+.camera__view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.camera__box {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #0f0e0c;
+  border: 1px solid #46433b;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.camera__box img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.camera__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+  color: #a9a395;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.camera__empty--error {
+  color: #fca5a5;
+}
+.camera__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.camera__stat .hint {
+  font-size: 13px;
+}
+.camera .hint.camera__lost {
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.camera__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.camera__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.camera__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.camera__modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.camera__modes button:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+.camera__slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.camera__slider-head {
+  display: flex;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+.camera__slider-head span {
+  font-weight: 800;
+}
+.camera input[type='range'] {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: #f1ede4;
+}
+.camera__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.camera input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  accent-color: #f1ede4;
+}

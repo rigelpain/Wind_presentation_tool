@@ -1,0 +1,122 @@
+/* コントロール画面の「音楽」の枠（MusicPanel.tsx）。
+   地は .control の暗い地。ボタンの見た目は styles.css の .control button に任せ、
+   ここでは .music の中だけの調整をする（.music を付けて優先させる）。 */
+
+.music {
+  border-radius: 8px;
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+  transition: outline-color 0.15s;
+}
+.music.is-drop {
+  outline-color: #a9a395;
+}
+
+.music__now-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1ede4;
+  overflow-wrap: anywhere;
+}
+
+.music__transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.music__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #cfc8b8;
+}
+
+.music .music__range {
+  flex: 1;
+  min-width: 120px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: #f1ede4;
+}
+.music .music__range:disabled {
+  opacity: 0.4;
+}
+
+.music__time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #cfc8b8;
+}
+
+.music__alert,
+.music__notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.music__alert {
+  background: #7f1d1d;
+  color: #fee2e2;
+}
+.music__notice {
+  background: #2c2a25;
+  color: #a9a395;
+}
+
+.music__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.music .music__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #2a2823;
+  color: #cfc8b8;
+}
+.music .music__row.is-current {
+  background: #3a372f;
+  color: #f1ede4;
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 #f1ede4;
+}
+
+.music .music__name {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+  color: inherit;
+  font-weight: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.music .music__name:hover {
+  border-color: #46433b;
+}
+
+.music .music__name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.music__add {
+  display: flex;
+  gap: 8px;
+}
