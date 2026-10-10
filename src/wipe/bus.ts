@@ -1,7 +1,7 @@
 // 表示画面のカメラを、コントロール画面から操作する（同じPCの窓どうし。BroadcastChannel）。
 // カメラと顔の追尾は表示画面だけで動く。コントロール画面には小さな確認用の絵だけを送る。
 // どちらも同じブラウザの中で、外へは送らない。
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getStore } from '../engine/store';
 import { effectiveLesson } from '../engine/lesson';
 import { drawCameraDebug } from './debugDraw';
@@ -106,10 +106,13 @@ export interface CameraRemote {
 export function useCameraRemote(): CameraRemote {
   const [status, setStatus] = useState<CameraStatus | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [ch] = useState(() => (typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(NAME) : null));
+  const chRef = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    if (!ch) return;
+    if (typeof BroadcastChannel === 'undefined') return;
+    // チャンネルは effect の中で作って閉じる（開発時に effect が二度動いても、閉じたものを使わない）
+    const ch = new BroadcastChannel(NAME);
+    chRef.current = ch;
     let url: string | null = null;
     ch.onmessage = (e: MessageEvent<Msg>) => {
       const m = e.data;
@@ -131,12 +134,12 @@ export function useCameraRemote(): CameraRemote {
     return () => {
       window.clearInterval(timer);
       if (url) URL.revokeObjectURL(url);
+      ch.close();
+      if (chRef.current === ch) chRef.current = null;
     };
-  }, [ch]);
+  }, []);
 
-  useEffect(() => () => ch?.close(), [ch]);
-
-  const post = (m: Msg) => ch?.postMessage(m);
+  const post = (m: Msg) => chRef.current?.postMessage(m);
   return {
     status,
     preview: status?.status === 'running' ? preview : null,
