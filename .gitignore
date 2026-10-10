@@ -8,3 +8,5 @@ public/mediapipe/
 public/private/
 src/lessons/private/
 .claude/settings.local.json
+# 監視役が撮った絵（照合の記録から参照する。リポジトリには入れない）
+docs/reviews/shots/
