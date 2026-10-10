@@ -824,3 +824,22 @@ button:disabled {
 .stage-viewport--preview .flash__seconds {
   visibility: hidden;
 }
+
+/* コントロール画面を狭い窓で開いたときは、縦に積む */
+@media (max-width: 1100px) {
+  .control {
+    height: auto;
+    min-height: 100vh;
+  }
+  .c-main {
+    grid-template-columns: 1fr;
+  }
+  .c-tabbody {
+    max-height: 70vh;
+  }
+}
+@media (max-width: 700px) {
+  .c-previews {
+    grid-template-columns: 1fr;
+  }
+}
