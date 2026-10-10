@@ -1,0 +1,23 @@
+/* 場面「timer」の見た目。色は変えない・点滅させない（授業設計 5.5）。 */
+.timer {
+  align-items: center;
+  text-align: center;
+}
+.timer__heading {
+  font-size: 48px;
+  font-weight: 800;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.timer__digits {
+  font-size: 380px;
+  line-height: 1;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.timer__end {
+  font-size: 80px;
+  font-weight: 800;
+  margin-top: 16px;
+}

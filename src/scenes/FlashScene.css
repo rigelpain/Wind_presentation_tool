@@ -1,0 +1,116 @@
+/* 場面「flash」の見た目。クラス名は flash で始める。
+ * 場面の箱（.scene）の余白は使わず、中身はすべて絶対位置で全面に置く（ワイプの余白の影響を受けないように）。 */
+
+/* 段階0: 題・枠の一覧・秒数 */
+.flash__prep {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 72px 128px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+}
+.flash__heading {
+  margin: 0;
+  font-size: 72px;
+  font-weight: 800;
+}
+.flash__slots {
+  display: grid;
+  grid-template-columns: repeat(3, 360px);
+  gap: 28px 40px;
+}
+.flash__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.flash__slot-name {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.flash__thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--paper-2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.flash__none {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: var(--muted);
+}
+.flash__seconds {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 40px;
+}
+.flash__seconds button {
+  font-size: 40px;
+  padding: 4px 28px;
+}
+.flash__seconds strong {
+  min-width: 3em;
+  text-align: center;
+  font-size: 56px;
+}
+
+/* 段階 k: 枠の中身（カウントダウン・提示・黒） */
+.flash__frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.flash--count {
+  background: var(--ink);
+  color: #fff;
+}
+.flash__tag {
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+}
+.flash__number {
+  font-size: 480px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.flash--show {
+  background: #000;
+}
+.flash__img {
+  flex: none;
+  display: block;
+}
+.flash__missing {
+  font-size: 56px;
+  font-weight: 700;
+  color: #fff;
+}
+.flash--black {
+  background: #000;
+}
+.flash__corner {
+  position: absolute;
+  left: 40px;
+  top: 32px;
+  font-size: 40px;
+  color: var(--paper-2);
+  opacity: 0.5;
+}

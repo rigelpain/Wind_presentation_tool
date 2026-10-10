@@ -1,0 +1,104 @@
+/* 写真の読み込みのパネルの見た目。クラス名は tray で始める（枠は .panel の中）。 */
+.tray__note {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.tray__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.tray__bar-left {
+  display: flex;
+  gap: 8px;
+}
+.tray__msg {
+  min-height: 1.6em;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: var(--muted);
+}
+.tray__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.tray__slot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 2px dashed #c9c3b5;
+  border-radius: 10px;
+}
+.tray__slot--filled {
+  border-style: solid;
+}
+.tray__slot--over {
+  border-color: var(--accent);
+  background: var(--paper);
+}
+.tray__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.tray__num {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+}
+.tray__name {
+  font-size: 16px;
+  color: var(--muted);
+}
+.tray__thumb {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--paper-2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.tray__thumb[draggable='true'] {
+  cursor: grab;
+}
+.tray__frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tray__img {
+  display: block;
+}
+.tray__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--muted);
+}
+.tray__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tray__btns button {
+  padding: 6px 12px;
+  font-size: 16px;
+}
+.tray--drop {
+  outline: 3px dashed var(--accent);
+  outline-offset: -10px;
+}
