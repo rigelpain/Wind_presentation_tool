@@ -1,0 +1,148 @@
+/* 場面「reveal」の見た目。1920×1080 の座標。文字は問い 64px 以上、答え 96px 以上。線は 4px 以上。 */
+
+.reveal {
+  overflow: hidden;
+}
+
+/* 見出しの下は詰める（本文を 680px までに収めるため） */
+.reveal > .heading {
+  margin-bottom: 24px;
+  line-height: 1.2;
+}
+
+/* 本文の高さ: 1080 のうち 80〜680 の 600px から見出し（約 110px）を引いた約 490px。
+   問い 2 行（約 166px）＋答えの箱（高さ 284px、中は答え 2 行まで）＋間 32px で約 482px。 */
+.reveal__body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 72px;
+}
+
+/* 画像（左 55% 程度）。縁のにじみを隠すため、ぼかす層は枠の外まで広げる */
+.reveal--with-media .reveal__media-frame {
+  position: relative;
+  flex: 0 0 55%;
+  align-self: stretch;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--paper-2);
+}
+
+/* 背面: 枠より上下左右 100px 大きくぼかした層。縁のにじみを隠すため。明かしてから 0.6 秒で消す */
+.reveal__media-back,
+.reveal__media-front {
+  position: absolute;
+}
+
+.reveal__media-back {
+  inset: -100px;
+  filter: blur(40px);
+}
+
+.reveal__media-back--out {
+  animation: reveal-fade-out 600ms var(--ease) both;
+}
+
+@keyframes reveal-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 前面: 写真そのもの。枠の中に全体が入る（contain）。段階0はぼかしたまま */
+.reveal__media-front {
+  inset: 0;
+  filter: blur(40px);
+}
+
+/* 段階1: 0.6 秒でぼかしが取れる（stepAt からの経過ぶん進めて描く） */
+.reveal__media-front--open {
+  animation: reveal-unblur 600ms var(--ease) both;
+}
+
+@keyframes reveal-unblur {
+  from {
+    filter: blur(40px);
+  }
+  to {
+    filter: blur(0);
+  }
+}
+
+/* 問いと答え（右、または中央） */
+.reveal__text {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 1400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 32px;
+  max-height: 100%;
+  text-align: center;
+}
+
+.reveal--with-media .reveal__text {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.reveal__question {
+  margin: 0;
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* 強調の語は行の高さを増やさない（2 行に折れても高さを超えないように） */
+.reveal__question .em,
+.reveal__answer .em {
+  line-height: 1;
+}
+
+/* 答えの箱。太い枠。高さは固定（答えが 2 行になっても箱の大きさは変わらない）。明かす前後で同じ大きさ */
+.reveal__answer-box {
+  box-sizing: border-box;
+  height: 284px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 8px solid var(--ink);
+  border-radius: 20px;
+  background: var(--paper);
+  text-align: center;
+}
+
+.reveal__hidden {
+  font-size: 120px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--muted);
+}
+
+/* 段階1: 0.5 秒、下から上がって薄くから濃くなる（stepAt からの経過ぶん進めて描く） */
+.reveal__answer {
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--ink);
+  animation: reveal-answer 500ms var(--ease) both;
+}
+
+@keyframes reveal-answer {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

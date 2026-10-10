@@ -1,0 +1,112 @@
+/* 場面「compare」の見た目。座標は 1920×1080。 */
+.compare {
+  position: absolute;
+  inset: 0;
+}
+
+.compare__heading {
+  position: absolute;
+  top: 56px;
+  left: 96px;
+  right: 96px;
+  margin: 0;
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+/* 1枚分（札・画像・説明）。左右の位置・大きさ・重ねの切り替えは 0.5 秒で動く */
+.compare__cell {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  transition:
+    left var(--move) var(--ease),
+    width var(--move) var(--ease),
+    top var(--move) var(--ease),
+    height var(--move) var(--ease),
+    opacity var(--move) var(--ease);
+}
+.compare__cell--off {
+  opacity: 0;
+}
+
+.compare__label {
+  align-self: flex-start;
+  max-width: 100%;
+  margin-bottom: 12px;
+  padding: 4px 18px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.compare__box {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+}
+
+.compare__caption {
+  margin-top: 12px;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* 画像の領域いっぱいに置く（MediaView の img・video・空の表示、静止画） */
+.compare__pic {
+  position: absolute;
+  inset: 0;
+}
+.compare__pic > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.compare__img {
+  display: block;
+  object-fit: contain;
+}
+.compare__pic > .media__empty,
+.compare__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 36px;
+  font-weight: 700;
+}
+
+/* flicker: 全面。黒の段階は何も出さない */
+.compare__flicker {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+.compare__full {
+  position: absolute;
+  inset: 0;
+}
+.compare__tag {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 4px 22px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 44px;
+  font-weight: 800;
+}
