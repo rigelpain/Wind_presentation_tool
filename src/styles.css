@@ -66,6 +66,7 @@ button:disabled {
   background: #000;
   cursor: none;
 }
+.stage-viewport.is-pointer,
 .stage-viewport:has(.panel-backdrop) {
   cursor: auto;
 }
@@ -226,11 +227,14 @@ button:disabled {
   display: block;
 }
 .media__empty {
-  color: #ddd;
+  color: var(--muted);
   font-size: 44px;
   font-weight: 700;
   padding: 80px;
   text-align: center;
+}
+.scene--media .media__empty {
+  color: #ddd;
 }
 .scene--media .heading--over {
   color: #fff;

@@ -112,6 +112,22 @@ export function Stage({ lesson }: { lesson: Lesson }) {
       .catch(() => {});
   }, []);
 
+  // マウスは動かしたときだけ出し、2秒止まったら隠す（共有の画面に矢印を残さない）
+  const [cursor, setCursor] = useState(false);
+  useEffect(() => {
+    let t = 0;
+    const onMove = () => {
+      setCursor(true);
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setCursor(false), 2000);
+    };
+    window.addEventListener('mousemove', onMove);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.clearTimeout(t);
+    };
+  }, []);
+
   const scene = lesson.scenes[shown];
   const kind = scene ? getKind(scene.kind) : undefined;
   const View = kind?.component;
@@ -119,7 +135,7 @@ export function Stage({ lesson }: { lesson: Lesson }) {
   const live = shown === state.sceneIndex;
 
   return (
-    <div className="stage-viewport">
+    <div className={`stage-viewport ${cursor ? 'is-pointer' : ''}`}>
       <div className="stage" data-wipe={state.wipe.mode} style={{ width: STAGE_W, height: STAGE_H, transform: `translate(-50%, -50%) scale(${scale})` }}>
         <div className="stage__scene" key={scene?.id}>
           {View && scene ? (

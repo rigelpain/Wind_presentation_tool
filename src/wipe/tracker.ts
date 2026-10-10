@@ -175,10 +175,62 @@ class FaceTracker {
     }
   }
 
+  /** カメラの代わりに動画か画像のファイルで試す（予行やカメラのない環境での確認用） */
+  async startFile(file: File) {
+    this.stopStream();
+    this.status = 'starting';
+    this.error = '';
+    this.emit();
+    try {
+      const url = URL.createObjectURL(file);
+      this.fileUrl = url;
+      if (file.type.startsWith('image/')) {
+        const img = new Image();
+        img.src = url;
+        await img.decode();
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext('2d')!;
+        const paint = () => ctx.drawImage(img, 0, 0);
+        paint();
+        this.paintTimer = window.setInterval(paint, 100);
+        this.stream = c.captureStream(30);
+        this.video.srcObject = this.stream;
+      } else {
+        this.video.srcObject = null;
+        this.video.src = url;
+        this.video.loop = true;
+      }
+      await this.video.play();
+      if (!this.detector) this.detector = await createDetector();
+      this.status = 'running';
+      this.tracks.A.reset();
+      this.tracks.B.reset();
+      this.running = true;
+      this.emit();
+      this.loop();
+    } catch (e) {
+      this.status = 'error';
+      this.error = describeError(e);
+      this.emit();
+    }
+  }
+
+  private fileUrl: string | null = null;
+  private paintTimer = 0;
+
   private stopStream() {
     this.running = false;
     this.stream?.getTracks().forEach((t) => t.stop());
     this.stream = null;
+    window.clearInterval(this.paintTimer);
+    if (this.fileUrl) {
+      this.video.removeAttribute('src');
+      this.video.load();
+      URL.revokeObjectURL(this.fileUrl);
+      this.fileUrl = null;
+    }
   }
 
   stop() {

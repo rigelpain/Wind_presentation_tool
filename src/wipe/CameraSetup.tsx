@@ -95,6 +95,17 @@ export function CameraSetup({ state, lesson, onClose }: { state: ShowState; less
             <button className="primary" onClick={() => void tracker.start()}>
               {tracker.status === 'running' ? 'カメラを始め直す' : 'カメラを始める'}
             </button>
+            <label className="file">
+              <span className="hint">カメラの代わりに動画・画像で試す</span>
+              <input
+                type="file"
+                accept="video/*,image/*"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void tracker.startFile(f);
+                }}
+              />
+            </label>
             <hr />
             <p className="hint">
               2人ともカメラに映った状態で押します。画面で左に映っている人が「{lesson.roleLabels.host}」、右の人が「{lesson.roleLabels.guest}」になります。
