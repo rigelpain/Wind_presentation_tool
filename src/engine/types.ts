@@ -101,6 +101,8 @@ export interface CaptionSettings {
   lines: 1 | 2;
   /** 話が止まってから消えるまで（秒） */
   holdSec: number;
+  /** 字の色（#RRGGBB） */
+  color: string;
 }
 
 /** コントロール画面で変える設定。授業のデータ（Lesson）には書き戻さず、状態に持つ */

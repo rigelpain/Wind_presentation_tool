@@ -53,7 +53,7 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
 
   if (!c.enabled) return null;
   const lineH = Math.round(c.size * 1.4);
-  const style: CSSProperties = { fontSize: c.size };
+  const style: CSSProperties = { fontSize: c.size, color: c.color || '#FFFFFF' };
   if (c.position === 'top') {
     Object.assign(style, { top: 40, left: 160, right: 160 });
   } else {

@@ -931,13 +931,12 @@ button:disabled {
   flex-direction: column;
 }
 .captions__line {
-  color: #fff;
   font-weight: 700;
   text-align: center;
   will-change: transform;
 }
 .captions__line.is-interim {
-  color: #e9e4d8;
+  opacity: 0.85;
 }
 
 /* マイクの音量（コントロール画面） */

@@ -5,6 +5,16 @@ import type { CaptionSettings } from '../engine/types';
 import './CaptionsPanel.css';
 import { MicMeter } from '../captions/MicMeter';
 
+/** 字幕の地（黒に近い）の上で読みやすい色 */
+const CAPTION_COLORS: [string, string][] = [
+  ['白', '#FFFFFF'],
+  ['黄', '#FDE047'],
+  ['水色', '#7DD3FC'],
+  ['黄緑', '#BEF264'],
+  ['桃', '#F9A8D4'],
+  ['橙', '#FDBA74'],
+];
+
 export function CaptionsPanel() {
   const c = useShow().settings.captions;
   const status = useCaptionStatus();
@@ -48,6 +58,23 @@ export function CaptionsPanel() {
         <input type="range" min={36} max={96} step={2} value={c.size} onChange={(e) => set({ size: Number(e.target.value) })} />
         <span>{c.size}px</span>
       </label>
+      <div className="captions-panel__row">
+        字の色
+        {CAPTION_COLORS.map(([name, hex]) => (
+          <button
+            key={hex}
+            title={name}
+            aria-label={name}
+            className={`captions-panel__swatch ${(c.color || '#FFFFFF').toUpperCase() === hex ? 'is-on' : ''}`}
+            style={{ background: hex }}
+            onClick={() => set({ color: hex })}
+          />
+        ))}
+        <input type="color" title="ほかの色" value={(c.color || '#FFFFFF').toLowerCase()} onChange={(e) => set({ color: e.target.value.toUpperCase() })} />
+        <span className="captions-panel__sample" style={{ color: c.color || '#FFFFFF' }}>
+          字幕の見本
+        </span>
+      </div>
       <div className="captions-panel__row">
         位置
         <button className={c.position === 'bottom' ? 'is-on' : ''} onClick={() => set({ position: 'bottom' })}>

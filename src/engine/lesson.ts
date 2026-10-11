@@ -15,7 +15,7 @@ export const DEFAULT_SETTINGS: ShowSettings = {
   roleLabels: {},
   labelScale: 1,
   labelColors: {},
-  captions: { enabled: false, size: 52, position: 'bottom', lines: 2, holdSec: 4 },
+  captions: { enabled: false, size: 52, position: 'bottom', lines: 2, holdSec: 4, color: '#FFFFFF' },
 };
 
 /** 設定の並びを、授業のデータの場面に合わせる（消えた場面を外し、新しい場面を後ろに足す） */
