@@ -1,11 +1,12 @@
 // コントロール画面の「字幕」の枠。話し声を聞き取って、表示画面に字幕を出す。
 import { useCaptions, useCaptionStatus } from '../captions/engine';
+import { labelText } from '../engine/labelColors';
 import { dispatch, useShow } from '../engine/store';
 import type { CaptionSettings } from '../engine/types';
 import './CaptionsPanel.css';
 import { MicMeter } from '../captions/MicMeter';
 
-/** 字幕の地（黒に近い）の上で読みやすい色 */
+/** 字幕の字の色 */
 const CAPTION_COLORS: [string, string][] = [
   ['白', '#FFFFFF'],
   ['黄', '#FDE047'],
@@ -13,6 +14,17 @@ const CAPTION_COLORS: [string, string][] = [
   ['黄緑', '#BEF264'],
   ['桃', '#F9A8D4'],
   ['橙', '#FDBA74'],
+  ['墨（白い地のとき）', '#141414'],
+];
+
+/** 字幕の地の色。none は地なし（字に縁取り） */
+const CAPTION_BGS: [string, string][] = [
+  ['黒', '#141414'],
+  ['紺', '#1E2A4A'],
+  ['深緑', '#14352A'],
+  ['えんじ', '#5A1A24'],
+  ['白', '#FFFFFF'],
+  ['地なし（字に縁取り）', 'none'],
 ];
 
 export function CaptionsPanel() {
@@ -20,6 +32,18 @@ export function CaptionsPanel() {
   const status = useCaptionStatus();
   const cap = useCaptions();
   const set = (patch: Partial<CaptionSettings>) => dispatch({ type: 'settings', patch: { captions: { ...c, ...patch } } });
+  /** 地の色を変える。白い字に白い地のように読めなくなるときは、字を白か墨に入れ替える */
+  const setBg = (bg: string) => {
+    const color = (c.color || '#FFFFFF').toUpperCase();
+    if (bg !== 'none') {
+      const readable = labelText(bg);
+      if (readable === '#141414' && color === '#FFFFFF') return set({ bg, color: '#141414' });
+      if (readable === '#FFFFFF' && color === '#141414') return set({ bg, color: '#FFFFFF' });
+    } else if (color === '#141414') {
+      return set({ bg, color: '#FFFFFF' });
+    }
+    set({ bg });
+  };
 
   let note = '';
   let bad = false;
@@ -71,8 +95,33 @@ export function CaptionsPanel() {
           />
         ))}
         <input type="color" title="ほかの色" value={(c.color || '#FFFFFF').toLowerCase()} onChange={(e) => set({ color: e.target.value.toUpperCase() })} />
-        <span className="captions-panel__sample" style={{ color: c.color || '#FFFFFF' }}>
-          字幕の見本
+      </div>
+      <div className="captions-panel__row">
+        地の色
+        {CAPTION_BGS.map(([name, hex]) => (
+          <button
+            key={hex}
+            title={name}
+            aria-label={name}
+            className={`captions-panel__swatch ${hex === 'none' ? 'captions-panel__swatch--none' : ''} ${(c.bg || '#141414').toUpperCase() === hex.toUpperCase() ? 'is-on' : ''}`}
+            style={hex === 'none' ? undefined : { background: hex }}
+            onClick={() => setBg(hex)}
+          />
+        ))}
+        <input
+          type="color"
+          title="ほかの色"
+          value={c.bg && c.bg !== 'none' ? c.bg.toLowerCase() : '#141414'}
+          onChange={(e) => setBg(e.target.value.toUpperCase())}
+        />
+      </div>
+      <div className="captions-panel__row">
+        見本
+        <span
+          className={`captions-panel__sample ${c.bg === 'none' ? 'captions-panel__sample--nobg' : ''}`}
+          style={{ color: c.color || '#FFFFFF', background: c.bg === 'none' ? 'transparent' : c.bg || '#141414' }}
+        >
+          見えてるのに、見えてない
         </span>
       </div>
       <div className="captions-panel__row">

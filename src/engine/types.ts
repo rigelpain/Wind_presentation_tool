@@ -103,6 +103,8 @@ export interface CaptionSettings {
   holdSec: number;
   /** 字の色（#RRGGBB） */
   color: string;
+  /** 地の色（#RRGGBB）。'none' なら地なし（字に縁取りを付ける） */
+  bg: string;
 }
 
 /** コントロール画面で変える設定。授業のデータ（Lesson）には書き戻さず、状態に持つ */

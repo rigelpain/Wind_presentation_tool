@@ -921,7 +921,6 @@ button:disabled {
   min-width: 40%;
   padding: 8px 26px;
   border-radius: 14px;
-  background: rgb(20, 20, 20);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -934,6 +933,11 @@ button:disabled {
   font-weight: 700;
   text-align: center;
   will-change: transform;
+}
+/* 地なしのときは、字に黒い縁取りを付けてどの画面の上でも読めるようにする */
+.captions--nobg .captions__line {
+  -webkit-text-stroke: 0.14em #000;
+  paint-order: stroke fill;
 }
 .captions__line.is-interim {
   opacity: 0.85;

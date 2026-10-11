@@ -53,6 +53,7 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
 
   if (!c.enabled) return null;
   const lineH = Math.round(c.size * 1.4);
+  const bgNone = c.bg === 'none';
   const style: CSSProperties = { fontSize: c.size, color: c.color || '#FFFFFF' };
   if (c.position === 'top') {
     Object.assign(style, { top: 40, left: 160, right: 160 });
@@ -71,8 +72,12 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
     }
   }
   return (
-    <div className={`captions ${idle ? 'is-idle' : ''}`} style={style} aria-live="polite">
-      <div className="captions__window" ref={win} style={{ height: lineH * c.lines + 16, lineHeight: `${lineH}px` }}>
+    <div className={`captions ${idle ? 'is-idle' : ''} ${bgNone ? 'captions--nobg' : ''}`} style={style} aria-live="polite">
+      <div
+        className="captions__window"
+        ref={win}
+        style={{ height: lineH * c.lines + 16, lineHeight: `${lineH}px`, background: bgNone ? 'transparent' : c.bg || '#141414' }}
+      >
         <div className="captions__stack">
           {items.map((it) => (
             <div

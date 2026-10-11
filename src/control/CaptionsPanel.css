@@ -46,8 +46,17 @@
   min-width: 0;
 }
 .captions-panel__sample {
-  background: rgb(20, 20, 20);
   font-weight: 700;
   padding: 2px 10px;
   border-radius: 6px;
+}
+
+.control .captions-panel__swatch--none {
+  background: repeating-linear-gradient(45deg, #f1ede4 0 4px, #8a8577 4px 8px);
+}
+.captions-panel__sample--nobg {
+  -webkit-text-stroke: 0.14em #000;
+  paint-order: stroke fill;
+  /* 地なしの見え方を確かめやすいよう、明るい地の上に置く */
+  background-image: linear-gradient(90deg, #f5f2ea, #a5c8ff) !important;
 }
