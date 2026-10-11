@@ -45,6 +45,7 @@ import { MusicPanel } from './MusicPanel';
 import { SettingsPanel } from './SettingsPanel';
 import { SlidesPanel } from './SlidesPanel';
 import { stageHeight } from '../engine/aspect';
+import { Tooltips } from './Tooltips';
 import { IconButton } from './ui';
 import { DisplayIndicator, ZoomGuide } from './ZoomGuide';
 
@@ -250,6 +251,7 @@ export function Control() {
         </section>
       </main>
       <MusicPlayer role="control" />
+      <Tooltips />
       {panel === 'photos' && <PhotoTray onClose={() => setPanel('none')} />}
       {panel === 'help' && <KeyHelp onClose={() => setPanel('none')} />}
       {panel === 'zoom' && <ZoomGuide onClose={() => setPanel('none')} />}
