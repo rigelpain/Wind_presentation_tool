@@ -1,9 +1,12 @@
 // Zoom で共有するときの手順（コントロール画面の「Zoom で共有」）。10/16 は Zoom で行う。
 import { Monitor } from 'lucide-react';
+import { stageRatio } from '../engine/aspect';
+import { useShow } from '../engine/store';
 import { useDisplayStatus } from '../stage/heartbeat';
 
 export function DisplayIndicator({ onHelp }: { onHelp: () => void }) {
   const beat = useDisplayStatus();
+  const aspect = useShow().settings.aspect;
   let cls = 'is-ok';
   let text = '';
   let title = '';
@@ -20,9 +23,9 @@ export function DisplayIndicator({ onHelp }: { onHelp: () => void }) {
     text = `${beat.fps}fps`;
     title = '表示画面の描画が遅い';
   } else {
-    const wide = Math.abs(beat.width / beat.height - 16 / 9) < 0.03;
+    const wide = Math.abs(beat.width / beat.height - stageRatio(aspect)) < 0.03;
     text = `${beat.fps}fps`;
-    title = `表示画面は描けています（${beat.width}×${beat.height}${wide ? '' : '、16:9 ではないので黒い帯が入る'}）`;
+    title = `表示画面は描けています（${beat.width}×${beat.height}${wide ? '' : `、画面の形（${aspect}）と違うので黒い帯が入る`}）`;
   }
   return (
     <button className={`c-display ${cls}`} onClick={onHelp} title={title} aria-label={`表示画面: ${title}`}>

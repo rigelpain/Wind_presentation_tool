@@ -1,26 +1,28 @@
 // 1920×1080 の舞台を描く。表示画面でも、コントロール画面の縮小表示（いま・次）でも使う。
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { STAGE_W as W, stageHeight } from '../engine/aspect';
 import { getKind } from '../engine/registry';
 import { dispatch, getStore, useNow } from '../engine/store';
 import type { Lesson, Scene, ShowState, Transition } from '../engine/types';
 import { WipeLayer } from '../wipe/WipeLayer';
 import { CaptionsLayer } from '../captions/CaptionsLayer';
 
-export const STAGE_W = 1920;
+export { STAGE_W } from '../engine/aspect';
+/** 16:9 のときの高さ（形を変えるときは stageHeight を使う） */
 export const STAGE_H = 1080;
 
 /** 入れ物の大きさに合わせた縮尺 */
-export function useFitScale(ref: RefObject<HTMLElement | null>) {
+export function useFitScale(ref: RefObject<HTMLElement | null>, h: number) {
   const [scale, setScale] = useState(0.1);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const fit = () => setScale(Math.min(el.clientWidth / STAGE_W, el.clientHeight / STAGE_H) || 0.1);
+    const fit = () => setScale(Math.min(el.clientWidth / W, el.clientHeight / h) || 0.1);
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [ref]);
+  }, [ref, h]);
   return scale;
 }
 
@@ -70,7 +72,8 @@ interface Props {
 
 export function StageCanvas({ state, lesson, preview, children }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
-  const scale = useFitScale(viewport);
+  const H = stageHeight(state.settings.aspect);
+  const scale = useFitScale(viewport, H);
   const ms = state.settings.transitionMs;
 
   // 切り替えの演出。表示中の場面（shown）は、黒の最中だけ状態の場面より遅れる
@@ -114,7 +117,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
 
   return (
     <div className={`stage-viewport ${preview ? 'stage-viewport--preview' : ''}`} ref={viewport}>
-      <div className="stage" data-wipe={wipeState.wipe.mode} style={{ width: STAGE_W, height: STAGE_H, transform: `translate(-50%, -50%) scale(${scale})`, ...style }}>
+      <div className="stage" data-wipe={wipeState.wipe.mode} style={{ width: W, height: H, transform: `translate(-50%, -50%) scale(${scale})`, ...style }}>
         {prev && (
           <div className={`stage__scene stage__scene--out-${phase.kind}`} key={`prev-${prev.id}`}>
             <SceneLayer scene={prev} step={99} state={state} lesson={lesson} />

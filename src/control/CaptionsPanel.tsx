@@ -1,5 +1,6 @@
 // コントロール画面の「字幕」の枠。話し声を聞き取って、表示画面に字幕を出す。
 import { AlignVerticalSpaceAround, Baseline, Captions, Move, PaintBucket, PanelBottom, PanelTop, Type } from 'lucide-react';
+import { stageHeight } from '../engine/aspect';
 import { useCaptions, useCaptionStatus } from '../captions/engine';
 import { captionFontSize, captionHeight, captionRect, lineRatio } from '../captions/layout';
 import { labelText } from '../engine/labelColors';
@@ -50,14 +51,14 @@ export function CaptionsPanel() {
     if (c.position === 'free' && c.box) {
       const h = captionHeight(size, c.lines, lineRatio(c));
       const y = Math.max(0, c.box.y + c.box.h - h);
-      set({ size, box: { ...c.box, y, h: Math.min(h, 1080) } });
+      set({ size, box: { ...c.box, y, h: Math.min(h, stageHeight(state.settings.aspect)) } });
     } else set({ size });
   };
   /** 行間。自由な位置のときは、字の大きさを保って箱の高さを変える（下の辺を基準にする） */
   const setLineHeight = (lineHeight: number) => {
     if (c.position === 'free' && c.box) {
       const size = captionFontSize(c);
-      const h = Math.min(1080, captionHeight(size, c.lines, lineHeight));
+      const h = Math.min(stageHeight(state.settings.aspect), captionHeight(size, c.lines, lineHeight));
       set({ lineHeight, box: { ...c.box, y: Math.max(0, c.box.y + c.box.h - h), h } });
     } else set({ lineHeight });
   };

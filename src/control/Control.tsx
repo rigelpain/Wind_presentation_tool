@@ -44,6 +44,7 @@ import { MicMeter } from '../captions/MicMeter';
 import { MusicPanel } from './MusicPanel';
 import { SettingsPanel } from './SettingsPanel';
 import { SlidesPanel } from './SlidesPanel';
+import { stageHeight } from '../engine/aspect';
 import { IconButton } from './ui';
 import { DisplayIndicator, ZoomGuide } from './ZoomGuide';
 
@@ -164,7 +165,7 @@ export function Control() {
                 {steps > 1 && <span className="c-step">段階 {Math.min(state.step, steps - 1) + 1}/{steps}</span>}
                 <b>{scene?.title}</b>
               </figcaption>
-              <div className="c-preview__box">
+              <div className="c-preview__box" style={{ aspectRatio: `1920 / ${stageHeight(state.settings.aspect)}` }}>
                 <StageCanvas state={state} lesson={lesson} preview="now" />
               </div>
             </figure>
@@ -173,7 +174,7 @@ export function Control() {
                 <span className="c-pill c-pill--next">次</span>
                 {state.step < steps - 1 ? `段階 ${state.step + 2}` : next ? next.title : 'おわり'}
               </figcaption>
-              <div className="c-preview__box">
+              <div className="c-preview__box" style={{ aspectRatio: `1920 / ${stageHeight(state.settings.aspect)}` }}>
                 {state.step < steps - 1 ? (
                   <div className="c-preview__same">
                     <StepForward size={22} />

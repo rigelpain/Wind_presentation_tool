@@ -1,10 +1,10 @@
 // 字幕の箱の位置と大きさ（1920×1080 の座標）。表示画面の字幕と、コントロール画面の位置の編集で同じ計算を使う。
+import { STAGE_W, stageHeight } from '../engine/aspect';
 import type { CaptionSettings, Role, ShowState } from '../engine/types';
 import { WIPE_ASPECT } from '../wipe/tracker';
 import { MARGIN, placements } from '../wipe/WipeLayer';
 
-export const STAGE_W = 1920;
-export const STAGE_H = 1080;
+export { STAGE_W } from '../engine/aspect';
 const GAP = 32;
 /** 箱の上下の余白の合計（px） */
 export const CAPTION_PAD = 16;
@@ -42,6 +42,7 @@ export function captionHeight(size: number, lines: number, ratio = LINE_RATIO): 
  * 字幕を置く場所。fixed は箱の幅いっぱい、band は帯の中で字の長さに合わせて縮む（中央寄せ）
  */
 export function captionRect(state: ShowState): { rect: Rect; fixed: boolean } {
+  const STAGE_H = stageHeight(state.settings.aspect);
   const c = state.settings.captions;
   const h = captionHeight(captionFontSize(c), c.lines, lineRatio(c));
   if (c.position === 'free' && c.box) return { rect: c.box, fixed: true };
@@ -59,6 +60,7 @@ export function captionRect(state: ShowState): { rect: Rect; fixed: boolean } {
 
 /** ワイプの箱（位置の編集で目安に描く） */
 export function wipeRects(state: ShowState): Rect[] {
+  const STAGE_H = stageHeight(state.settings.aspect);
   const place = placements(state.wipe.mode);
   const k = state.settings.wipeScale;
   const out: Rect[] = [];

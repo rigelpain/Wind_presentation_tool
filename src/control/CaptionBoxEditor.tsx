@@ -1,14 +1,15 @@
 // 字幕の位置と大きさを、画面の縮図の上でドラッグして決める。
 // 箱をつかんで動かす。辺や角をつかんで大きさを変える（高さを変えると字の大きさが変わる）。
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
-import { captionFontSize, captionLineHeight, captionRect, CAPTION_PAD, lineRatio, STAGE_H, STAGE_W, wipeRects, type Rect } from '../captions/layout';
+import { captionFontSize, captionLineHeight, captionRect, CAPTION_PAD, lineRatio, STAGE_W, wipeRects, type Rect } from '../captions/layout';
+import { stageHeight } from '../engine/aspect';
 import { dispatch, useShow } from '../engine/store';
 
 type Grip = 'move' | 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 const GRIPS: Grip[] = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 const MIN_W = 320;
 
-function clampRect(r: Rect, minH: number): Rect {
+function clampRect(r: Rect, minH: number, STAGE_H: number): Rect {
   const w = Math.max(MIN_W, Math.min(STAGE_W, r.w));
   const h = Math.max(minH, Math.min(STAGE_H, r.h));
   const x = Math.max(0, Math.min(STAGE_W - w, r.x));
@@ -35,6 +36,7 @@ export function CaptionBoxEditor() {
     return () => ro.disconnect();
   }, []);
 
+  const H = stageHeight(state.settings.aspect);
   const rect = captionRect(state).rect;
   const minH = Math.round(20 * lineRatio(c)) * c.lines + CAPTION_PAD;
 
@@ -72,7 +74,7 @@ export function CaptionBoxEditor() {
         r.h -= dy;
       }
     }
-    latest.current = clampRect(r, minH);
+    latest.current = clampRect(r, minH, H);
     send(latest.current);
   };
   const onUp = (e: RPointerEvent) => {
@@ -90,8 +92,8 @@ export function CaptionBoxEditor() {
 
   return (
     <div className="cbox">
-      <div className="cbox__frame" ref={frame} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
-        <div className="cbox__stage" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
+      <div className="cbox__frame" style={{ aspectRatio: `${STAGE_W} / ${H}` }} ref={frame} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+        <div className="cbox__stage" style={{ width: STAGE_W, height: H, transform: `scale(${scale})` }}>
           {wipeRects(state).map((w, i) => (
             <div key={i} className="cbox__wipe" style={{ left: w.x, top: w.y, width: w.w, height: w.h }}>
               ワイプ

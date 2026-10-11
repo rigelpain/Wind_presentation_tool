@@ -2,6 +2,7 @@
 // 段階0は題と枠の一覧（映す秒数もここで変える）。段階 k（1〜）は枠 k の「カウントダウン → 提示 → 黒」を、
 // stepAt からの経過時間で決める。時間の計算は flashPhase（純粋な関数）に分けてある。
 import './FlashScene.css';
+import { stageRatio } from '../engine/aspect';
 import type { CSSProperties } from 'react';
 import type { SceneKind, SceneViewProps } from '../engine/registry';
 import { useNow } from '../engine/store';
@@ -23,7 +24,6 @@ export interface FlashProps {
 }
 
 const DEFAULT_SLOTS = [1, 2, 3, 4, 5, 6].map(teamSlot);
-const STAGE_ASPECT = 16 / 9;
 
 const slotsOf = (p: FlashProps): string[] => p.slots ?? DEFAULT_SLOTS;
 const labelOf = (p: FlashProps, i: number): string => p.labels?.[i] ?? `チーム${i + 1}`;
@@ -133,7 +133,7 @@ function FlashView({ scene, props, step, stepAt, state, dispatch }: SceneViewPro
       <div className="scene flash flash--show">
         <div className="flash__frame">
           {photo ? (
-            <img className="flash__img" src={photo.url} alt="" style={photoBox(photo, STAGE_ASPECT)} />
+            <img className="flash__img" src={photo.url} alt="" style={photoBox(photo, stageRatio(state.settings.aspect))} />
           ) : (
             <div className="flash__missing">{name}の写真がありません</div>
           )}

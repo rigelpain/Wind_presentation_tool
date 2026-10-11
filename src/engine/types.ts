@@ -112,6 +112,9 @@ export interface CaptionSettings {
   bg: string;
 }
 
+/** 表示画面の形 */
+export type Aspect = '16:9' | '16:10' | '4:3';
+
 /** コントロール画面で変える設定。授業のデータ（Lesson）には書き戻さず、状態に持つ */
 export interface ShowSettings {
   /** 場面の並び（scene id）。null なら授業のデータの順 */
@@ -119,6 +122,8 @@ export interface ShowSettings {
   /** 飛ばす場面の id */
   skipped: string[];
   overrides: Record<string, SceneOverride>;
+  /** 表示画面の形（幅 1920 のまま高さを変える） */
+  aspect: Aspect;
   /** 場面に transition がないときの切り替わり方 */
   defaultTransition: Transition;
   /** 切り替えの長さ（ms）。黒・重ね・横すべりに使う */

@@ -14,10 +14,12 @@ import {
   Square,
   Timer,
   type LucideIcon,
+  Ratio,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { dispatch, useLesson, useShow } from '../engine/store';
 import type { ShowSettings, Transition } from '../engine/types';
+import { ASPECTS } from '../engine/aspect';
 import { IconButton, Row, Section, Segmented, Slider, Status } from './ui';
 import './SettingsPanel.css';
 
@@ -80,6 +82,17 @@ export function SettingsPanel() {
 
   return (
     <div className="c-panel">
+      <Section
+        icon={Ratio}
+        title="画面の形"
+        help="表示画面の縦横の比。プロジェクターや画面に合わせると、全画面にしたときに上下や左右の黒い帯がなくなります。Mac の画面は 16:10、多くのプロジェクターと Zoom は 16:9、古いプロジェクターは 4:3。幅はそのままで高さが変わるので、字の大きさは変わりません。"
+      >
+        <Segmented
+          options={ASPECTS.map((a) => ({ value: a.value, label: a.label, title: a.title }))}
+          value={state.settings.aspect ?? '16:9'}
+          onChange={(aspect) => dispatch({ type: 'settings', patch: { aspect } })}
+        />
+      </Section>
       <Section
         icon={Layers}
         title="切り替え"
