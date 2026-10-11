@@ -124,9 +124,7 @@ export function CaptionBoxEditor() {
           </div>
         </div>
       </div>
-      <p className="hint">
-        箱をドラッグして動かす。辺や角をドラッグして大きさを変える（高さで字の大きさが変わる。いま {size}px）。動かすと、表示画面にもすぐ効きます。
-      </p>
+      <p className="hint">ドラッグで位置と大きさを決める（高さで字の大きさが変わる。いま {size}px）。</p>
     </div>
   );
 }

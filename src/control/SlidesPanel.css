@@ -1,18 +1,4 @@
-/* コントロール画面「スライド」の枠。地は .control（暗い）。文字は 13〜16px。 */
-
-.slides__top {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.slides__top .hint {
-  margin: 0;
-  font-size: 13px;
-}
-.slides__top button {
-  flex: none;
-}
+/* コントロール画面「スライド」の枠。地は .control（暗い）。文字は 13〜16px。部品の見た目は ui.css。 */
 
 .slides__list {
   list-style: none;
@@ -34,10 +20,14 @@
   border-color: #f1ede4;
   border-style: dashed;
 }
+/* いまの場面は、地を明るくせず、左の赤い線と明るい枠で示す（中の部品が暗い地のまま読めるように） */
 .slides__row.is-now {
-  background: #f1ede4;
-  color: #1b1a18;
+  background: #3a382f;
   border-color: #f1ede4;
+  box-shadow: inset 3px 0 0 #e8452c;
+}
+.slides__row.is-now .slides__name {
+  font-weight: 700;
 }
 .slides__row.is-done {
   color: #8a8577;
@@ -46,15 +36,21 @@
 .slides__head {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   cursor: grab;
 }
 .slides__head:active {
   cursor: grabbing;
 }
 
+.slides__grip {
+  display: inline-flex;
+  flex: none;
+  color: #8a8577;
+}
+
 .slides__num {
-  width: 26px;
+  width: 24px;
   flex: none;
   text-align: right;
   font-weight: 700;
@@ -84,26 +80,14 @@
   cursor: default;
 }
 .slides__kind {
-  font-size: 13px;
+  font-size: 12.5px;
   color: #a9a395;
 }
 .slides__row.is-now .slides__kind {
-  color: #4a4639;
+  color: #cfc8b8;
 }
 .slides__row.is-done .slides__kind {
   color: #6f6a5f;
-}
-
-.slides__skip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: none;
-  font-size: 13px;
-  cursor: pointer;
-}
-.slides__skip input {
-  margin: 0;
 }
 
 .slides__move {
@@ -111,26 +95,16 @@
   gap: 2px;
   flex: none;
 }
-.slides__row .slides__btn {
-  width: 28px;
-  padding: 2px 0;
-  font-size: 14px;
-  line-height: 1.3;
-  flex: none;
+
+/* 押すボタンは高さ 28px 以上（アイコンだけのボタンも同じ） */
+.slides__row .ui-btn,
+.slides__row .ui-btn--icon {
+  min-width: 28px;
+  min-height: 28px;
+  justify-content: center;
 }
-.slides__row .slides__btn:disabled {
+.slides__row .ui-btn:disabled {
   opacity: 0.35;
-}
-.slides__row .slides__toggle {
-  transition: transform 0.15s;
-}
-.slides__row .slides__toggle.is-open {
-  transform: rotate(90deg);
-}
-.slides__row.is-now .slides__btn {
-  background: #fbf8f1;
-  color: #1b1a18;
-  border-color: #bdb6a4;
 }
 
 .slides__edit {
@@ -141,37 +115,39 @@
   flex-direction: column;
   gap: 8px;
 }
-.slides__row.is-now .slides__edit {
-  border-top-color: #c9c2b0;
-}
 
 .slides__notes {
-  margin: 0;
-  font-size: 13px;
-  white-space: pre-wrap;
-  opacity: 0.8;
-}
-
-.slides__field {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 13px;
-}
-.slides__field > span {
-  width: 4.5em;
-  flex: none;
-}
-.slides__field select {
-  flex: 1 1 140px;
-  min-width: 0;
-  font-size: 14px;
-}
-.slides__actual {
+  align-items: flex-start;
+  gap: 6px;
   font-size: 13px;
   color: #a9a395;
+  white-space: pre-wrap;
 }
-.slides__row.is-now .slides__actual {
-  color: #4a4639;
+.slides__notes svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.slides__actual {
+  font-size: 12.5px;
+  color: #a9a395;
+}
+
+/* 切り替え・ワイプのアイコンのボタンは高さ 28px 以上 */
+.control .slides__edit .ui-seg button {
+  min-height: 28px;
+  padding: 4px 8px;
+}
+
+.slides__edit select {
+  flex: 1 1 140px;
+  min-width: 0;
+  min-height: 28px;
+  font-size: 14px;
+}
+
+/* 押せるものは 28px 以上 */
+.control .slides__name {
+  min-height: 28px;
 }

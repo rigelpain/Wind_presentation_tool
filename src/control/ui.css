@@ -260,3 +260,33 @@
 .ui-status--bad .ui-status__dot {
   background: #ef4444;
 }
+
+/* 押せるものは 28px 以上（見た目は小さくても、押せる範囲を広げる） */
+.control .ui-help {
+  min-width: 28px;
+  min-height: 28px;
+  justify-content: center;
+  align-items: center;
+}
+.control .ui-icon,
+.control .ui-btn--icon {
+  min-width: 28px;
+  min-height: 28px;
+}
+.control .ui-btn,
+.control .ui-seg button {
+  min-height: 28px;
+}
+.control .ui-slider input[type='range'] {
+  height: 28px;
+}
+.ui-toggle {
+  min-height: 28px;
+}
+.control .ui-swatch {
+  width: 26px;
+  height: 26px;
+}
+.control .ui-swatch-custom {
+  height: 28px;
+}

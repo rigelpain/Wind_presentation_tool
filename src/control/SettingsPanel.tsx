@@ -1,21 +1,38 @@
-// コントロール画面の「切り替えと時計」の枠。指示書: docs/briefs/14_切り替えと時計.md
+// コントロール画面の「切り替えと時計」の枠。指示書: docs/briefs/14_切り替えと時計.md（見た目は docs/briefs/20_コントロール画面を見やすく.md）
+import {
+  Blend,
+  Clock,
+  EyeOff,
+  Hourglass,
+  Layers,
+  Monitor,
+  MoveRight,
+  Play,
+  Ruler,
+  RotateCcw,
+  Scissors,
+  Square,
+  Timer,
+  type LucideIcon,
+} from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { dispatch, useLesson, useShow } from '../engine/store';
 import type { ShowSettings, Transition } from '../engine/types';
+import { IconButton, Row, Section, Segmented, Slider, Status } from './ui';
 import './SettingsPanel.css';
 
-const TRANSITIONS: [Transition, string, string][] = [
-  ['cut', 'カット', 'すぐ切り替える'],
-  ['black', '黒を挟む', '区切りを作る。演出として記録する'],
-  ['fade', '重ねる', '前の画面と重ねて替える'],
-  ['slide', '横すべり', '次が右から入る。演出として記録する'],
+const TRANSITIONS: [Transition, string, string, LucideIcon][] = [
+  ['cut', 'カット', 'すぐ切り替える', Scissors],
+  ['black', '黒を挟む', '区切りを作る。演出として記録する', Square],
+  ['fade', '重ねる', '前の画面と重ねて替える', Blend],
+  ['slide', '横すべり', '次が右から入る。演出として記録する', MoveRight],
 ];
 
-const CLOCKS: [ShowSettings['stageClock'], string][] = [
-  ['none', '出さない'],
-  ['remaining', '残り時間'],
-  ['elapsed', '経過時間'],
-  ['time', 'いまの時刻'],
+const CLOCKS: [ShowSettings['stageClock'], string, LucideIcon][] = [
+  ['none', '出さない', EyeOff],
+  ['remaining', '残り時間', Hourglass],
+  ['elapsed', '経過時間', Timer],
+  ['time', 'いまの時刻', Clock],
 ];
 
 /**
@@ -63,103 +80,84 @@ export function SettingsPanel() {
 
   return (
     <div className="c-panel">
-      <h3>場面に指定がないときの切り替え</h3>
-      <div className="settings__options" role="radiogroup" aria-label="場面に指定がないときの切り替え">
-        {TRANSITIONS.map(([key, label, desc]) => {
-          const on = s.defaultTransition === key;
-          return (
-            <div className="settings__option" key={key}>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={on}
-                className={on ? 'is-on' : undefined}
-                onClick={() => dispatch({ type: 'settings', patch: { defaultTransition: key } })}
-              >
-                {label}
-              </button>
-              <span className="hint">{desc}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      <h3>切り替えの長さ</h3>
-      <div className="settings__slider">
-        <input
-          type="range"
-          min={200}
-          max={1500}
-          step={50}
-          value={s.transitionMs}
-          aria-label="切り替えの長さ"
-          onChange={(e) => dispatch({ type: 'settings', patch: { transitionMs: Number(e.target.value) } })}
+      <Section
+        icon={Layers}
+        title="切り替え"
+        help={
+          <div className="settings__help">
+            <p>カット: すぐ切り替える</p>
+            <p>黒を挟む: 区切りを作る。演出として記録する</p>
+            <p>重ねる: 前の画面と重ねて替える</p>
+            <p>横すべり: 次が右から入る。演出として記録する</p>
+            <p>授業設計の目安は 0.4〜0.6秒</p>
+            <p>場面ごとの切り替えは「スライド」の枠で変えられます</p>
+          </div>
+        }
+      >
+        <Segmented
+          wrap
+          options={TRANSITIONS.map(([value, label, desc, icon]) => ({ value, label, icon, title: desc }))}
+          value={s.defaultTransition}
+          onChange={(v) => dispatch({ type: 'settings', patch: { defaultTransition: v } })}
         />
-        <span className="settings__value">{(s.transitionMs / 1000).toFixed(2)}秒</span>
-      </div>
-      <p className="hint">授業設計の目安は 0.4〜0.6秒</p>
-      <p className="hint">場面ごとの切り替えは「スライド」の枠で変えられます</p>
+        <Row icon={Ruler} label="長さ">
+          <Slider
+            min={200}
+            max={1500}
+            step={50}
+            value={s.transitionMs}
+            format={(v) => `${(v / 1000).toFixed(2)}秒`}
+            onChange={(v) => dispatch({ type: 'settings', patch: { transitionMs: v } })}
+          />
+        </Row>
+      </Section>
 
-      <h3>授業の長さ</h3>
-      <div className="settings__row">
-        <input
-          type="number"
-          min={5}
-          max={180}
-          inputMode="numeric"
-          placeholder="授業のデータ"
-          aria-label="授業の長さ（分）"
-          className="settings__minutes"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commitDuration}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitDuration();
-          }}
-        />
-        <span>分</span>
-        <span className="hint">いまの長さ: {lesson.durationMin} 分</span>
-      </div>
+      <Section
+        icon={Clock}
+        title="時計"
+        help={<div className="settings__help"><p>表示画面の左上に小さく出ます。生徒にも見えます</p></div>}
+      >
+        <div className="settings__clock">
+          <Row icon={Hourglass} label="授業の長さ">
+            <input
+              type="number"
+              min={5}
+              max={180}
+              inputMode="numeric"
+              placeholder="授業のデータ"
+              aria-label="授業の長さ（分）"
+              className="settings__minutes"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commitDuration}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitDuration();
+              }}
+            />
+            <span>分</span>
+            <span className="settings__now">いま {lesson.durationMin} 分</span>
+          </Row>
+          <Row icon={Monitor} label="表示画面" title="表示画面の左上に出す時計">
+            <Segmented
+              wrap
+              options={CLOCKS.map(([value, label, icon]) => ({ value, label, icon }))}
+              value={s.stageClock}
+              onChange={(v) => dispatch({ type: 'settings', patch: { stageClock: v } })}
+            />
+          </Row>
+          <Row label="授業">
+            {state.startedAt === null ? (
+              <IconButton icon={Play} label="始める" title="授業を始める（経過時間と記録を始める）" variant="primary" onClick={() => dispatch({ type: 'start' })} />
+            ) : (
+              <Status tone="ok">開始 {hhmm(state.startedAt)}</Status>
+            )}
+          </Row>
+        </div>
+      </Section>
 
-      <h3>表示画面に出す時計</h3>
-      <div className="settings__options settings__options--row" role="radiogroup" aria-label="表示画面に出す時計">
-        {CLOCKS.map(([key, label]) => {
-          const on = s.stageClock === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              className={on ? 'is-on' : undefined}
-              onClick={() => dispatch({ type: 'settings', patch: { stageClock: key } })}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-      <p className="hint">表示画面の左上に小さく出ます。生徒にも見えます</p>
-
-      <h3>授業の開始</h3>
-      <div className="settings__row">
-        {state.startedAt === null ? (
-          <button type="button" className="primary" onClick={() => dispatch({ type: 'start' })}>
-            授業を始める
-          </button>
-        ) : (
-          <button type="button" disabled>
-            開始 {hhmm(state.startedAt)}
-          </button>
-        )}
-      </div>
-
-      <h3>設定を元に戻す</h3>
-      <div className="settings__row">
-        <button type="button" onClick={resetAll}>
-          切り替えと時計を元に戻す
-        </button>
-      </div>
+      <Section icon={RotateCcw} title="元に戻す">
+        <IconButton icon={RotateCcw} label="戻す" title="切り替えと時計の設定を初めの状態に戻す（並び・ワイプの設定は戻さない）" onClick={resetAll} />
+      </Section>
     </div>
   );
 }

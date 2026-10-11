@@ -1,5 +1,5 @@
 /* コントロール画面の「音楽」の枠（MusicPanel.tsx）。
-   地は .control の暗い地。ボタンの見た目は styles.css の .control button に任せ、
+   地は .control の暗い地。部品（Section・Row・Slider・IconButton など）の見た目は ui.css に任せ、
    ここでは .music の中だけの調整をする（.music を付けて優先させる）。 */
 
 .music {
@@ -25,48 +25,11 @@
   gap: 8px;
 }
 
-.music__field {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #cfc8b8;
-}
-
-.music .music__range {
-  flex: 1;
-  min-width: 120px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  accent-color: #f1ede4;
-}
-.music .music__range:disabled {
-  opacity: 0.4;
-}
-
-.music__time {
-  font-variant-numeric: tabular-nums;
+/* 位置の欄は「1:23 / 3:45」を一行で出す */
+.music .ui-slider__value {
+  min-width: 0;
   white-space: nowrap;
   color: #cfc8b8;
-}
-
-.music__alert,
-.music__notice {
-  margin: 0;
-  padding: 8px 10px;
-  border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.music__alert {
-  background: #7f1d1d;
-  color: #fee2e2;
-}
-.music__notice {
-  background: #2c2a25;
-  color: #a9a395;
 }
 
 .music__list {
@@ -114,9 +77,4 @@
 .music .music__name-input {
   flex: 1;
   min-width: 0;
-}
-
-.music__add {
-  display: flex;
-  gap: 8px;
 }

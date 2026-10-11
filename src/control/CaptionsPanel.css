@@ -1,12 +1,22 @@
-.captions-panel__switch {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* 字幕を出す（大きめの入り切り） */
+.captions-panel__switch .ui-toggle {
   font-size: 16px;
+  font-weight: 700;
 }
-.captions-panel__bad {
-  color: #fca5a5 !important;
+.captions-panel__switch .ui-toggle__track {
+  width: 46px;
+  height: 26px;
 }
+.captions-panel__switch .ui-toggle__thumb {
+  width: 20px;
+  height: 20px;
+  top: 3px;
+  left: 3px;
+}
+.captions-panel__switch .ui-toggle input:checked + .ui-toggle__track .ui-toggle__thumb {
+  transform: translateX(20px);
+}
+
 .captions-panel__live {
   background: #0f0e0c;
   border: 1px solid #46433b;
@@ -15,45 +25,18 @@
   min-height: 72px;
   font-size: 15px;
   line-height: 1.6;
+  color: #f1ede4;
 }
-.captions-panel__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.captions-panel__row input[type='range'] {
-  flex: 1;
-  min-width: 120px;
+.captions-panel .ui-section__help .hint {
+  font-size: 12.5px;
 }
 
-.control .captions-panel__swatch {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid #46433b;
-}
-.control .captions-panel__swatch.is-on {
-  outline: 2px solid #f1ede4;
-  outline-offset: 2px;
-}
-.captions-panel__row input[type='color'] {
-  width: 30px;
-  height: 24px;
-  padding: 0 2px;
-  flex: none;
-  min-width: 0;
-}
 .captions-panel__sample {
   font-weight: 700;
   padding: 2px 10px;
   border-radius: 6px;
 }
 
-.control .captions-panel__swatch--none {
-  background: repeating-linear-gradient(45deg, #f1ede4 0 4px, #8a8577 4px 8px);
-}
 .captions-panel__sample--nobg {
   -webkit-text-stroke: 0.14em #000;
   paint-order: stroke fill;

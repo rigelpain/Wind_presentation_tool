@@ -65,10 +65,10 @@ export function Segmented<T extends string | number>({ options, value, onChange,
 }
 
 /** スライダーと値。reset を渡すと「標準」に戻すボタンが付く */
-export function Slider({ min, max, step, value, onChange, format, reset, disabled }: { min: number; max: number; step: number; value: number; onChange: (v: number) => void; format?: (v: number) => string; reset?: number; disabled?: boolean }) {
+export function Slider({ min, max, step, value, onChange, format, reset, disabled, label }: { min: number; max: number; step: number | 'any'; value: number; onChange: (v: number) => void; format?: (v: number) => string; reset?: number; disabled?: boolean; label?: string }) {
   return (
     <span className="ui-slider">
-      <input type="range" min={min} max={max} step={step} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} />
+      <input type="range" aria-label={label} min={min} max={max} step={step} value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} />
       <span className="ui-slider__value">{format ? format(value) : value}</span>
       {reset !== undefined && (
         <button className="ui-icon" title="標準に戻す" aria-label="標準に戻す" disabled={disabled || value === reset} onClick={() => onChange(reset)}>
@@ -80,10 +80,10 @@ export function Slider({ min, max, step, value, onChange, format, reset, disable
 }
 
 /** 入り切りのスイッチ */
-export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label?: string; disabled?: boolean }) {
+export function Toggle({ checked, onChange, label, disabled, ariaLabel }: { checked: boolean; onChange: (v: boolean) => void; label?: string; disabled?: boolean; ariaLabel?: string }) {
   return (
     <label className={`ui-toggle ${disabled ? 'is-disabled' : ''}`}>
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" aria-label={ariaLabel} checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
       <span className="ui-toggle__track" aria-hidden>
         <span className="ui-toggle__thumb" />
       </span>

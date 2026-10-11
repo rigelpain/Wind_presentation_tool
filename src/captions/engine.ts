@@ -86,6 +86,10 @@ export function useCaptionEngine() {
     let restartTimer = 0;
     let local = false;
     let fatal = false;
+    // 聞き取りが文字を出さずに止まり続けるとき（ネットがない、ブラウザが対応していない など）は、
+    // やり直しの間を 0.3 秒から 10 秒まで延ばして、画面が重くならないようにする
+    let quickEnds = 0;
+    let startedAt = 0;
 
     const post = (interim: string) => {
       const msg: CaptionMessage = { finals: finals.slice(-4), interim: interim ? { id: nextId, text: interim } : null, at: Date.now() };
@@ -100,7 +104,9 @@ export function useCaptionEngine() {
       rec.interimResults = true;
       if (local) rec.processLocally = true;
       rec.onstart = () => setStatus({ state: 'listening', local });
+      startedAt = performance.now();
       rec.onresult = (e: any) => {
+        quickEnds = 0;
         let interim = '';
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const r = e.results[i];
@@ -128,7 +134,9 @@ export function useCaptionEngine() {
       rec.onend = () => {
         // 音声認識は、黙っている時間が続くと自分で止まる。止める指示がなければ、すぐ聞き直す
         if (stopped || fatal) return;
-        restartTimer = window.setTimeout(begin, 300);
+        quickEnds = performance.now() - startedAt < 3000 ? quickEnds + 1 : 0;
+        const wait = Math.min(10_000, 300 * 2 ** Math.min(quickEnds, 6));
+        restartTimer = window.setTimeout(begin, wait);
       };
       setStatus({ state: 'starting' });
       try {

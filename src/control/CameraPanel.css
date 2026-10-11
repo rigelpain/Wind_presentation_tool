@@ -1,10 +1,5 @@
-/* カメラ・ワイプの枠（コントロール画面の暗い地に合わせる）。部品の外の決まりは styles.css の .control に任せる */
+/* コントロール画面の「カメラ」の枠（暗い地。部品の見た目は ui.css、外の決まりは styles.css の .control） */
 
-.camera__view {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 .camera__box {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -30,123 +25,88 @@
   padding: 16px;
   text-align: center;
   color: #a9a395;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
 }
 .camera__empty--error {
   color: #fca5a5;
 }
+
 .camera__stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  margin: 0;
+  font-size: 12.5px;
+  color: #a9a395;
+  font-variant-numeric: tabular-nums;
 }
-.camera__stat .hint {
-  font-size: 13px;
-}
-.camera .hint.camera__lost {
+.camera__lost {
   color: #fca5a5;
   font-weight: 700;
 }
 
-.camera__section {
+.camera__help {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-.camera__row {
-  display: flex;
-  flex-wrap: wrap;
   gap: 6px;
 }
-.camera__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-}
-.camera__modes {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.camera__modes button:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-.camera__slider {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-}
-.camera__slider-head {
-  display: flex;
-  justify-content: space-between;
-  font-variant-numeric: tabular-nums;
-}
-.camera__slider-head span {
-  font-weight: 800;
-}
-.camera input[type='range'] {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  accent-color: #f1ede4;
-}
-.camera__check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-.camera input[type='checkbox'] {
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  accent-color: #f1ede4;
+.camera__help p {
+  margin: 0;
 }
 
-.camera__roles {
+.camera__select {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 13px;
+}
+
+.camera__actions {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
-.camera__role {
-  display: grid;
-  grid-template-columns: 7em minmax(0, 1fr);
-  row-gap: 4px;
-  align-items: center;
-  gap: 8px;
+
+/* 「動画で試す」は、中の入力欄を隠して、ボタンの見た目の label で開く */
+.camera__file {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #2c2a25;
+  color: #f1ede4;
+  border: 1px solid #46433b;
+  font-size: 13px;
 }
-.camera__role input {
+.camera__file:hover {
+  border-color: #f1ede4;
+}
+.camera__file input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.camera__file.is-disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+
+.camera__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
   min-width: 0;
 }
-
-.camera__swatches {
-  grid-column: 2;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-wrap: wrap;
+.camera__name input[type='text'] {
+  flex: 1 1 120px;
+  min-width: 0;
+  font-size: 13px;
 }
-.control .camera__swatch {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border-radius: 50%;
-  border: 2px solid #46433b;
-}
-.control .camera__swatch.is-on {
-  outline: 2px solid #f1ede4;
-  outline-offset: 2px;
-}
-.camera__swatches input[type='color'] {
-  width: 30px;
-  height: 24px;
-  padding: 0 2px;
-}
-.camera__tagpreview {
+.camera__tag {
   font-weight: 800;
   padding: 1px 10px;
   border-radius: 6px;
