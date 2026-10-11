@@ -1,10 +1,10 @@
 // 表示画面のカメラを、コントロール画面から操作する（同じPCの窓どうし。BroadcastChannel）。
 // カメラと顔の追尾は表示画面だけで動く。コントロール画面には小さな確認用の絵だけを送る。
 // どちらも同じブラウザの中で、外へは送らない。
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { getStore } from '../engine/store';
 import { effectiveLesson } from '../engine/lesson';
-import { drawCameraDebug } from './debugDraw';
+import { drawCameraDebug, trackerBoxes, type DebugBoxes } from './debugDraw';
 import { tracker, type TrackerStatus } from './tracker';
 
 export interface CameraStatus {
@@ -16,6 +16,8 @@ export interface CameraStatus {
   fps: number;
   /** 2人それぞれを見失っているか（A＝登録で左の人、B＝右の人） */
   lost: { A: boolean; B: boolean };
+  /** 映像の元（file なら動画・画像のファイルで試している） */
+  source: 'camera' | 'file';
   /** 起動中にどこで待っているか */
   phase: '' | 'permission' | 'model';
   /** 全体で2人そろわず、左右に分けて探している */
@@ -29,7 +31,9 @@ type Msg =
   | { type: 'cmd'; cmd: 'stop' }
   | { type: 'cmd'; cmd: 'register' }
   | { type: 'cmd'; cmd: 'file'; file: File }
-  | { type: 'want' }
+  /** コントロール画面が見ている。live なら、コントロール画面が自分でカメラを開いているので枠の数字だけ送る */
+  | { type: 'want'; live: boolean }
+  | { type: 'boxes'; data: DebugBoxes }
   | { type: 'status'; status: CameraStatus }
   | { type: 'preview'; blob: Blob };
 
@@ -46,6 +50,7 @@ function statusNow(): CameraStatus {
     lost: { A: tracker.isLost('A'), B: tracker.isLost('B') },
     tiled: tracker.tiled,
     phase: tracker.phase,
+    source: tracker.source,
     at: Date.now(),
   };
 }
@@ -55,11 +60,13 @@ export function serveCamera(): () => void {
   if (typeof BroadcastChannel === 'undefined') return () => {};
   const ch = new BroadcastChannel(NAME);
   let wantUntil = 0;
+  let live = false;
   const send = () => ch.postMessage({ type: 'status', status: statusNow() } satisfies Msg);
   ch.onmessage = (e: MessageEvent<Msg>) => {
     const m = e.data;
     if (m.type === 'want') {
       wantUntil = Date.now() + 3000;
+      live = m.live;
       if (tracker.devices.length === 0) void tracker.listDevices();
       send();
     } else if (m.type === 'cmd') {
@@ -72,10 +79,22 @@ export function serveCamera(): () => void {
   const unsub = tracker.subscribe(send);
   const canvas = document.createElement('canvas');
   let busy = false;
+  let lastJpeg = 0;
+  let lastStatus = 0;
+  // 枠の数字は 20 回/秒（軽い）。映像を送るとき（コントロール画面がカメラを開けないとき）は 4 回/秒
   const timer = window.setInterval(() => {
-    if (Date.now() > wantUntil) return;
-    send();
-    if (busy) return;
+    const now = Date.now();
+    if (now > wantUntil || tracker.status !== 'running') return;
+    if (now - lastStatus > 1000) {
+      send();
+      lastStatus = now;
+    }
+    if (live) {
+      ch.postMessage({ type: 'boxes', data: trackerBoxes() } satisfies Msg);
+      return;
+    }
+    if (busy || now - lastJpeg < 250) return;
+    lastJpeg = now;
     const st = getStore().getState();
     const lesson = effectiveLesson(getStore().lesson, st.settings);
     const ok = drawCameraDebug(canvas, { swapped: st.wipe.swapped, mirror: st.wipe.mirror, labels: lesson.roleLabels, maxWidth: 640 });
@@ -89,7 +108,7 @@ export function serveCamera(): () => void {
       'image/jpeg',
       0.7,
     );
-  }, 250);
+  }, 50);
   return () => {
     window.clearInterval(timer);
     unsub();
@@ -100,8 +119,12 @@ export function serveCamera(): () => void {
 export interface CameraRemote {
   /** 表示画面から状態が届いていなければ null（表示画面が開いていない） */
   status: CameraStatus | null;
-  /** 確認用の絵（objectURL） */
+  /** 確認用の絵（objectURL）。コントロール画面がカメラを開けないときだけ届く */
   preview: string | null;
+  /** 表示画面から届いた枠の数字（20 回/秒。描き直しを起こさないよう ref で持つ） */
+  boxes: MutableRefObject<DebugBoxes | null>;
+  /** コントロール画面が自分でカメラを開けたか（開けたら映像の代わりに枠の数字を受け取る） */
+  setLive: (live: boolean) => void;
   start: (deviceId?: string) => void;
   stop: () => void;
   register: () => void;
@@ -113,6 +136,8 @@ export function useCameraRemote(): CameraRemote {
   const [status, setStatus] = useState<CameraStatus | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const chRef = useRef<BroadcastChannel | null>(null);
+  const boxes = useRef<DebugBoxes | null>(null);
+  const live = useRef(false);
 
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
@@ -123,6 +148,7 @@ export function useCameraRemote(): CameraRemote {
     ch.onmessage = (e: MessageEvent<Msg>) => {
       const m = e.data;
       if (m.type === 'status') setStatus(m.status);
+      else if (m.type === 'boxes') boxes.current = m.data;
       else if (m.type === 'preview') {
         const next = URL.createObjectURL(m.blob);
         setPreview(next);
@@ -130,7 +156,7 @@ export function useCameraRemote(): CameraRemote {
         url = next;
       }
     };
-    const want = () => ch.postMessage({ type: 'want' } satisfies Msg);
+    const want = () => ch.postMessage({ type: 'want', live: live.current } satisfies Msg);
     want();
     const timer = window.setInterval(() => {
       want();
@@ -149,6 +175,12 @@ export function useCameraRemote(): CameraRemote {
   return {
     status,
     preview: status?.status === 'running' ? preview : null,
+    boxes,
+    setLive: (v) => {
+      if (live.current === v) return;
+      live.current = v;
+      post({ type: 'want', live: v });
+    },
     start: (deviceId) => post({ type: 'cmd', cmd: 'start', deviceId }),
     stop: () => post({ type: 'cmd', cmd: 'stop' }),
     register: () => post({ type: 'cmd', cmd: 'register' }),

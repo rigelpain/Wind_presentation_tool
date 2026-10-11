@@ -893,3 +893,11 @@ button:disabled {
   padding: 1px 6px;
   border-radius: 4px;
 }
+
+/* コントロール画面のカメラの確認の映像 */
+.remote-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}

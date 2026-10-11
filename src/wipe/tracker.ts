@@ -142,6 +142,8 @@ class FaceTracker {
     this.emit();
   }
 
+  /** 映像の元。file のときは動画・画像のファイル */
+  source: 'camera' | 'file' = 'camera';
   /** いまどこで待っているか（起動中の案内に使う） */
   phase: '' | 'permission' | 'model' = '';
   private startId = 0;
@@ -157,6 +159,7 @@ class FaceTracker {
     }
     const id = ++this.startId;
     this.stopStream();
+    this.source = 'camera';
     this.status = 'starting';
     this.error = '';
     this.phase = 'permission';
@@ -230,7 +233,9 @@ class FaceTracker {
 
   /** カメラの代わりに動画か画像のファイルで試す（予行やカメラのない環境での確認用） */
   async startFile(file: File) {
+    ++this.startId;
     this.stopStream();
+    this.source = 'file';
     this.status = 'starting';
     this.error = '';
     this.emit();

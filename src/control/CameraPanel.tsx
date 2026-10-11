@@ -1,6 +1,7 @@
 // コントロール画面の「カメラ・ワイプ」の枠。カメラと顔の追尾は表示画面の窓で動く。ここからは遠隔で操作し、確認用の絵と状態を見る。
 // 指示書: docs/briefs/12_カメラとワイプ.md
 import { openDisplay } from './Control';
+import { RemotePreview } from '../wipe/RemotePreview';
 import { dispatch, useLesson, useShow } from '../engine/store';
 import type { Role, WipeMode } from '../engine/types';
 import { useCameraRemote } from '../wipe/bus';
@@ -19,7 +20,7 @@ export function CameraPanel() {
   const state = useShow();
   const lesson = useLesson();
   const cam = useCameraRemote();
-  const { status, preview } = cam;
+  const { status } = cam;
   const open = status !== null;
   const running = status?.status === 'running';
   const { mode, swapped, mirror, showLabels } = state.wipe;
@@ -31,7 +32,7 @@ export function CameraPanel() {
   const setSettings = (patch: { wipeScale?: number; wipeZoom?: number }) => dispatch({ type: 'settings', patch });
 
   const view = () => {
-    if (preview) return <img src={preview} alt="カメラの確認の絵" />;
+    if (status?.status === 'running') return <RemotePreview remote={cam} />;
     if (status === null)
       return (
         <div className="camera__empty">
