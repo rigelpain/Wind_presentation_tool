@@ -131,6 +131,8 @@ export interface ShowSettings {
   /** 飛ばす場面の id */
   skipped: string[];
   overrides: Record<string, SceneOverride>;
+  /** 「答えはあとで」の札を出すか（代表の指示 2026-10-11 で、いったん出さない。出さないあいだは記録もしない） */
+  showLoops: boolean;
   /** 表示画面の形（幅 1920 のまま高さを変える） */
   aspect: Aspect;
   /** 場面に transition がないときの切り替わり方 */

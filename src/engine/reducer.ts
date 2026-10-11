@@ -88,11 +88,11 @@ function enterScene(s: ShowState, lesson: Lesson, index: number, now: number, at
   next = log(next, kinds, now, lesson);
   next = { ...next, music: musicCue(next.music, scene, now) };
   if (scene.wipe) next = setWipe(next, scene.wipe, now, lesson);
-  if (scene.opensLoop && !next.openLoops.some((l) => l.id === scene.opensLoop!.id)) {
+  if (s.settings.showLoops && scene.opensLoop && !next.openLoops.some((l) => l.id === scene.opensLoop!.id)) {
     next = { ...next, openLoops: [...next.openLoops, { ...scene.opensLoop, openedAt: now }] };
     next = log(next, ['loop-open'], now, lesson);
   }
-  if (scene.closesLoop && next.openLoops.some((l) => l.id === scene.closesLoop)) {
+  if (s.settings.showLoops && scene.closesLoop && next.openLoops.some((l) => l.id === scene.closesLoop)) {
     next = { ...next, openLoops: next.openLoops.filter((l) => l.id !== scene.closesLoop) };
     next = log(next, ['loop-close'], now, lesson);
   }

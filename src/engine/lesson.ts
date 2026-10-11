@@ -7,6 +7,7 @@ export const DEFAULT_SETTINGS: ShowSettings = {
   skipped: [],
   overrides: {},
   aspect: '16:9',
+  showLoops: false,
   defaultTransition: 'cut',
   transitionMs: 500,
   durationMin: null,

@@ -135,7 +135,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
           // 次の予告: 予告を出す場面の最後の段階で、次の場面を知らせる
           const nextScene = preview !== 'next' && live ? lesson.scenes[index + 1] : undefined;
           const showTeaser = !!(scene?.teaser && nextScene && step >= stepsOf(scene).length - 1);
-          const showLoops = state.openLoops.length > 0 && !scene?.props?.hideLoops;
+          const showLoops = state.settings.showLoops && state.openLoops.length > 0 && !scene?.props?.hideLoops;
           if (!showTeaser && !showLoops) return null;
           return (
             <div className="loops">
