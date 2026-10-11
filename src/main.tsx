@@ -1,8 +1,10 @@
 import { StrictMode, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createStore } from './engine/store';
+import { createStore, getStore } from './engine/store';
 import { pickLesson } from './lessons';
 import { Control } from './control/Control';
+import { Editor } from './edit/Editor';
+import { loadUserLessons } from './lessons/userLessons';
 import { registerScenes } from './scenes';
 import { Stage } from './stage/Stage';
 import './styles.css';
@@ -14,6 +16,13 @@ window.addEventListener('dragover', (e) => e.preventDefault());
 window.addEventListener('drop', (e) => e.preventDefault());
 const lesson = pickLesson();
 createStore(lesson);
+
+// 編集画面で授業を直したら、同じ授業を開いているこの窓にもすぐ映す（ほかの窓の localStorage の書き込みで届く）
+window.addEventListener('storage', (e) => {
+  if (e.key !== 'wind-user-lessons') return;
+  const updated = loadUserLessons().find((l) => l.id === getStore().lesson.id);
+  if (updated) getStore().replaceLesson(updated);
+});
 
 function useHash() {
   return useSyncExternalStore(
@@ -27,6 +36,10 @@ function useHash() {
 
 function App() {
   const hash = useHash();
+  if (hash.startsWith('#/edit')) {
+    document.title = `編集 — ${lesson.title}`;
+    return <Editor />;
+  }
   // #/control（と前の名前 #/presenter）がコントロール画面。それ以外は表示画面
   if (hash.startsWith('#/control') || hash.startsWith('#/presenter')) {
     document.title = `コントロール — ${lesson.title}`;

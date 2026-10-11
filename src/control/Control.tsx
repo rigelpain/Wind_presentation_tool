@@ -16,6 +16,7 @@ import {
   MonitorUp,
   Music,
   NotebookPen,
+  PencilRuler,
   Play,
   RotateCcw,
   School,
@@ -156,6 +157,7 @@ export function Control() {
           <ClassroomBadge />
           <DisplayIndicator onHelp={() => setPanel('zoom')} />
           <IconButton icon={ScreenShare} title="Zoom で共有する手順" label="Zoom" onClick={() => setPanel('zoom')} />
+          <IconButton icon={PencilRuler} title="編集画面を開く（スライドを作る・直す）" onClick={() => window.open(`${location.pathname}${location.search}#/edit`, 'wind-edit')} />
           <IconButton icon={MonitorUp} title="表示画面を開く" onClick={openDisplay} />
         </div>
       </header>

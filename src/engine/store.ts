@@ -15,7 +15,7 @@ export class ShowStore {
   private channel: BroadcastChannel | null = null;
   private readonly key: string;
 
-  constructor(readonly lesson: Lesson) {
+  constructor(public lesson: Lesson) {
     this.key = `wind-show:${lesson.id}`;
     this.state = this.load() ?? initialState(lesson);
     if (typeof BroadcastChannel !== 'undefined') {
@@ -35,6 +35,15 @@ export class ShowStore {
   }
 
   getState = (): ShowState => this.state;
+
+  /** 授業のデータを差し替える（編集画面で直したとき）。いまの場面は範囲に収める */
+  replaceLesson(lesson: Lesson) {
+    if (lesson.id !== this.lesson.id) return;
+    this.lesson = lesson;
+    const scenes = effectiveLesson(lesson, this.state.settings).scenes.length;
+    this.state = { ...this.state, sceneIndex: Math.max(0, Math.min(this.state.sceneIndex, scenes - 1)) };
+    this.listeners.forEach((fn) => fn());
+  }
 
   subscribe = (fn: () => void): (() => void) => {
     this.listeners.add(fn);

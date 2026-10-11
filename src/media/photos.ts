@@ -115,9 +115,32 @@ export async function removePhoto(slot: string): Promise<void> {
   await changed();
 }
 
+/** 授業中に読み込んだ写真を全部消す。スライドの編集で入れた画像（asset-…）は消さない */
 export async function clearAll(): Promise<void> {
-  await tx('readwrite', (s) => s.clear());
+  const slots = Object.keys(views).filter((k) => !k.startsWith(ASSET_PREFIX));
+  for (const slot of slots) await tx('readwrite', (s) => s.delete(slot));
   await changed();
+}
+
+/** スライドの編集で入れる画像の枠の名前の頭 */
+export const ASSET_PREFIX = 'asset-';
+
+/** 画像（動画）をスライドの素材として入れ、その枠の名前を返す */
+export async function putAsset(blob: Blob): Promise<string> {
+  const slot = `${ASSET_PREFIX}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+  await putPhoto(slot, blob);
+  return slot;
+}
+
+/** 素材の中身（書き出し用） */
+export async function readAsset(slot: string): Promise<Blob | null> {
+  if (views[slot]) return views[slot].blob;
+  try {
+    const p = await tx('readonly', (s) => s.get(slot) as IDBRequest<Photo | undefined>);
+    return p?.blob ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function usePhotos(): Record<string, PhotoView> {

@@ -65,8 +65,8 @@ function StageClock({ state, lesson }: { state: ShowState; lesson: Lesson }) {
 interface Props {
   state: ShowState;
   lesson: Lesson;
-  /** 縮小表示。キー・カメラ・音は持たず、ワイプは仮の箱で出す */
-  preview?: 'now' | 'next';
+  /** 縮小表示。キー・カメラ・音は持たず、ワイプは仮の箱で出す。edit は編集画面（切り替えの演出なし、state の場面と段階をそのまま描く） */
+  preview?: 'now' | 'next' | 'edit';
   children?: ReactNode;
 }
 
@@ -86,7 +86,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
     if (to === from) return;
     prevIndex.current = to;
     const t = lesson.scenes[to]?.transition ?? 'cut';
-    if (preview === 'next' || to < from || t === 'cut') {
+    if (preview === 'next' || preview === 'edit' || to < from || t === 'cut') {
       setPhase({ kind: 'none' });
       setShown(to);
       return;
@@ -106,12 +106,12 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
     };
   }, [state.sceneIndex, lesson, ms, preview]);
 
-  const index = preview === 'next' ? state.sceneIndex + 1 : shown;
+  const index = preview === 'next' ? state.sceneIndex + 1 : preview === 'edit' ? state.sceneIndex : shown;
   const scene = lesson.scenes[index];
-  const live = preview !== 'next' && shown === state.sceneIndex;
+  const live = preview === 'edit' || (preview !== 'next' && shown === state.sceneIndex);
   const step = preview === 'next' ? 0 : live ? state.step : 99;
   const wipeState: ShowState =
-    preview === 'next' && scene?.wipe ? { ...state, wipe: { ...state.wipe, mode: scene.wipe } } : state;
+    (preview === 'next' || preview === 'edit') && scene?.wipe ? { ...state, wipe: { ...state.wipe, mode: scene.wipe } } : state;
   const prev = phase.kind === 'fade' || phase.kind === 'slide' ? lesson.scenes[phase.from] : undefined;
   const style = { '--t': `${ms}ms` } as CSSProperties;
 
@@ -156,7 +156,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
           );
         })()}
         {!preview && <StageClock state={state} lesson={lesson} />}
-        {preview !== 'next' && <CaptionsLayer state={state} />}
+        {preview !== 'next' && preview !== 'edit' && <CaptionsLayer state={state} />}
         {phase.kind === 'black' && <div className="dip" key={`dip-${phase.at}`} />}
         {state.blackout && preview !== 'next' && <div className="blackout" />}
       </div>
