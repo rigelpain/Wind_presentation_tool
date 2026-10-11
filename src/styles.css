@@ -1002,3 +1002,104 @@ button:disabled {
   align-items: center;
   gap: 8px;
 }
+
+/* ---------- コントロール画面: アイコンを使った外枠（2026-10-11 見直し） ---------- */
+.c-top {
+  align-items: center;
+  gap: 18px;
+}
+.c-clock__label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.c-clock__value {
+  font-size: 30px;
+}
+.c-clock--time .c-clock__value {
+  font-size: 22px;
+}
+.c-top__actions .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.control .c-display {
+  padding: 6px 10px;
+  gap: 6px;
+}
+.c-preview figcaption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.c-preview figcaption b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-pill {
+  background: #e8452c;
+  color: #fff;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 6px;
+}
+.c-pill--next {
+  background: #46433b;
+}
+.c-step {
+  font-size: 12px;
+  color: #a9a395;
+}
+.c-notes {
+  position: relative;
+  padding-left: 44px;
+  font-size: 20px;
+  min-height: 0;
+}
+.c-notes__icon {
+  position: absolute;
+  left: 16px;
+  top: 18px;
+  color: #8a8577;
+}
+.c-nav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 52px;
+  min-height: 48px;
+}
+.c-nav__next {
+  font-size: 20px;
+  font-weight: 800;
+}
+.c-log summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.control .c-tabs button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px 6px;
+  font-size: 12px;
+  border-radius: 10px;
+}
+.c-tabbody {
+  padding: 10px;
+}
+.c-tabbody > .c-panel {
+  gap: 10px;
+}
+.c-tools {
+  align-items: center;
+}
+.c-tools__spacer {
+  flex: 1;
+}

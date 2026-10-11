@@ -1,26 +1,32 @@
 // Zoom で共有するときの手順（コントロール画面の「Zoom で共有」）。10/16 は Zoom で行う。
+import { Monitor } from 'lucide-react';
 import { useDisplayStatus } from '../stage/heartbeat';
 
 export function DisplayIndicator({ onHelp }: { onHelp: () => void }) {
   const beat = useDisplayStatus();
   let cls = 'is-ok';
   let text = '';
+  let title = '';
   if (!beat) {
     cls = 'is-bad';
-    text = '表示画面が開いていません';
+    text = '未接続';
+    title = '表示画面が開いていません';
   } else if (!beat.visible) {
     cls = 'is-bad';
-    text = '表示画面が隠れています（最小化・別のデスクトップ）';
+    text = '隠れている';
+    title = '表示画面が最小化されているか、別のデスクトップにあります。前に出してください';
   } else if (beat.fps < 20) {
     cls = 'is-warn';
-    text = `表示画面の描画が遅い（${beat.fps}fps）`;
+    text = `${beat.fps}fps`;
+    title = '表示画面の描画が遅い';
   } else {
-    const ratio = beat.width / beat.height;
-    const wide = Math.abs(ratio - 16 / 9) < 0.03;
-    text = `表示画面 ${beat.fps}fps ・ ${beat.width}×${beat.height}${wide ? '' : '（16:9 ではないので黒い帯が入る）'}`;
+    const wide = Math.abs(beat.width / beat.height - 16 / 9) < 0.03;
+    text = `${beat.fps}fps`;
+    title = `表示画面は描けています（${beat.width}×${beat.height}${wide ? '' : '、16:9 ではないので黒い帯が入る'}）`;
   }
   return (
-    <button className={`c-display ${cls}`} onClick={onHelp} title="Zoom で共有する手順">
+    <button className={`c-display ${cls}`} onClick={onHelp} title={title} aria-label={`表示画面: ${title}`}>
+      <Monitor size={15} aria-hidden />
       <span className="c-display__dot" />
       {text}
     </button>
