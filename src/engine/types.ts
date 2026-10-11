@@ -112,6 +112,10 @@ export interface ShowSettings {
   wipeZoom: number;
   /** ワイプの役割名の上書き（登録のときに左の人＝host、右の人＝guest の名前を決める）。空なら授業のデータのまま */
   roleLabels: Partial<Record<Role, string>>;
+  /** 名札に添える名前（例: 進行役：小林）。このPCの状態にだけ置き、授業のデータやリポジトリには書かない */
+  personNames: Partial<Record<Role, string>>;
+  /** 名札に名前も出すか */
+  showNames: boolean;
 }
 
 export interface MusicState {

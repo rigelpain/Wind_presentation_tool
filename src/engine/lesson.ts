@@ -1,6 +1,6 @@
 // コントロール画面の設定（並び・飛ばす場面・場面ごとの上書き）を、授業のデータに当てる。
 // 授業のデータそのものは変えない。設定は状態に持つので、リロードしても残る。
-import type { Lesson, Scene, ShowSettings } from './types';
+import type { Lesson, Role, Scene, ShowSettings } from './types';
 
 export const DEFAULT_SETTINGS: ShowSettings = {
   order: null,
@@ -13,7 +13,17 @@ export const DEFAULT_SETTINGS: ShowSettings = {
   wipeScale: 1,
   wipeZoom: 1,
   roleLabels: {},
+  personNames: {},
+  showNames: true,
 };
+
+/** ワイプの名札。名前があって「名前も出す」なら「進行役：小林」、なければ「進行」 */
+export function wipeLabel(lesson: Lesson, settings: ShowSettings, role: Role): string {
+  const roleName = lesson.roleLabels[role];
+  const person = settings.personNames?.[role]?.trim();
+  if (!person || !settings.showNames) return roleName;
+  return `${roleName}${roleName.endsWith('役') ? '' : '役'}：${person}`;
+}
 
 /** 設定の並びを、授業のデータの場面に合わせる（消えた場面を外し、新しい場面を後ろに足す） */
 export function orderedIds(base: Lesson, settings: ShowSettings): string[] {

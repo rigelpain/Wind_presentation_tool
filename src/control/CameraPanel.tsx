@@ -2,6 +2,7 @@
 // 指示書: docs/briefs/12_カメラとワイプ.md
 import { openDisplay } from './Control';
 import { RemotePreview } from '../wipe/RemotePreview';
+import { wipeLabel } from '../engine/lesson';
 import { dispatch, getStore, useLesson, useShow } from '../engine/store';
 import type { Role, WipeMode } from '../engine/types';
 import { useCameraRemote } from '../wipe/bus';
@@ -123,12 +124,20 @@ export function CameraPanel() {
                 placeholder={getStore().lesson.roleLabels[role]}
                 onChange={(e) => dispatch({ type: 'settings', patch: { roleLabels: { ...state.settings.roleLabels, [role]: e.target.value } } })}
               />
-              <span>役</span>
+              <span>役：</span>
+              <input
+                type="text"
+                maxLength={12}
+                className="camera__person"
+                value={state.settings.personNames?.[role] ?? ''}
+                placeholder="名前（なくてよい）"
+                onChange={(e) => dispatch({ type: 'settings', patch: { personNames: { ...state.settings.personNames, [role]: e.target.value } } })}
+              />
             </label>
           ))}
         </div>
         <p className="hint">
-          2人ともカメラに映った状態で押します。画面で左に映っている人が「{lesson.roleLabels.host}」、右の人が「{lesson.roleLabels.guest}」になります。役の名前はワイプの名札に出るので、実名ではなく役の名前にします（空なら授業の名前）。「{lesson.roleLabels.guest}」の方が、解説モード（E）で大きくなります。
+          2人ともカメラに映った状態で押します。画面で左に映っている人が「{lesson.roleLabels.host}」、右の人が「{lesson.roleLabels.guest}」になります。名札は「{wipeLabel(lesson, state.settings, 'host')}」のように出ます（役が空なら授業の名前）。名前はこのPCにだけ置き、リポジトリには入りません。ほかの人の名前を出すときは、その人の了承を得てください。「{lesson.roleLabels.guest}」の方が、解説モード（E）で大きくなります。
         </p>
         <div className="camera__row">
           <button className="primary" disabled={!running} onClick={() => cam.register()}>
@@ -191,7 +200,16 @@ export function CameraPanel() {
         </label>
         <label className="camera__check">
           <input type="checkbox" checked={showLabels} onChange={() => dispatch({ type: 'labels' })} />
-          ワイプに役割名を出す
+          ワイプに名札を出す
+        </label>
+        <label className="camera__check">
+          <input
+            type="checkbox"
+            checked={state.settings.showNames}
+            disabled={!showLabels}
+            onChange={() => dispatch({ type: 'settings', patch: { showNames: !state.settings.showNames } })}
+          />
+          名札に名前も出す（「{lesson.roleLabels.host}役：名前」の形。名前を入れたときだけ）
         </label>
       </div>
 

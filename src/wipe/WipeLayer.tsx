@@ -1,5 +1,6 @@
 // 画面の左下・右下のワイプ。カメラの映像から2人の顔のまわりを切り出して描く。
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { wipeLabel } from '../engine/lesson';
 import type { Lesson, Role, ShowState, WipeMode } from '../engine/types';
 import { tracker, WIPE_ASPECT, type TrackId } from './tracker';
 
@@ -92,7 +93,7 @@ export function WipeLayer({ state, lesson, placeholder }: { state: ShowState; le
               height={Math.round(960 / WIPE_ASPECT)}
             />
             {!running && <div className="wipe__empty">{placeholder ?? 'カメラ待ち'}</div>}
-            {showLabels && <div className="wipe__label">{lesson.roleLabels[role]}</div>}
+            {showLabels && <div className="wipe__label">{wipeLabel(lesson, state.settings, role)}</div>}
           </div>
         );
       })}
