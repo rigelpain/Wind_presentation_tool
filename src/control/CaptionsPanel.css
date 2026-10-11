@@ -1,0 +1,28 @@
+.captions-panel__switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+.captions-panel__bad {
+  color: #fca5a5 !important;
+}
+.captions-panel__live {
+  background: #0f0e0c;
+  border: 1px solid #46433b;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 72px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.captions-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.captions-panel__row input[type='range'] {
+  flex: 1;
+  min-width: 120px;
+}

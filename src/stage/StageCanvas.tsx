@@ -4,6 +4,7 @@ import { getKind } from '../engine/registry';
 import { dispatch, getStore, useNow } from '../engine/store';
 import type { Lesson, Scene, ShowState, Transition } from '../engine/types';
 import { WipeLayer } from '../wipe/WipeLayer';
+import { CaptionsLayer } from '../captions/CaptionsLayer';
 
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
@@ -138,6 +139,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
           </div>
         )}
         {!preview && <StageClock state={state} lesson={lesson} />}
+        {preview !== 'next' && <CaptionsLayer state={state} />}
         {phase.kind === 'black' && <div className="dip" key={`dip-${phase.at}`} />}
         {state.blackout && preview !== 'next' && <div className="blackout" />}
       </div>

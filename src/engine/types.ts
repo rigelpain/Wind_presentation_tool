@@ -91,6 +91,18 @@ export interface SceneOverride {
   music?: string;
 }
 
+export interface CaptionSettings {
+  /** 字幕を出す（コントロール画面の窓で音声を聞き取る） */
+  enabled: boolean;
+  /** 字の大きさ（px、1920×1080 の座標） */
+  size: number;
+  position: 'bottom' | 'top';
+  /** 出す行の数 */
+  lines: 1 | 2;
+  /** 話が止まってから消えるまで（秒） */
+  holdSec: number;
+}
+
 /** コントロール画面で変える設定。授業のデータ（Lesson）には書き戻さず、状態に持つ */
 export interface ShowSettings {
   /** 場面の並び（scene id）。null なら授業のデータの順 */
@@ -115,6 +127,8 @@ export interface ShowSettings {
    * このPCの状態にだけ置き、授業のデータやリポジトリには書かない
    */
   roleLabels: Partial<Record<Role, string>>;
+  /** 話し声の字幕 */
+  captions: CaptionSettings;
   /** 名札の地の色（#RRGGBB）。字の色は自動 */
   labelColors: Partial<Record<Role, string>>;
   /** 名札の字の大きさ（1 が 32px。0.75〜2.5） */

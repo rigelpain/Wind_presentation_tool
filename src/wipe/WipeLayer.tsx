@@ -4,7 +4,7 @@ import { DEFAULT_LABEL_BG, labelText } from '../engine/labelColors';
 import type { Lesson, Role, ShowState, WipeMode } from '../engine/types';
 import { tracker, WIPE_ASPECT, type TrackId } from './tracker';
 
-const MARGIN = 48;
+export const MARGIN = 48;
 const SIZES = { normal: 420, large: 760, small: 300 } as const; // 幅（px、1920×1080 の座標）
 
 interface Placement {
@@ -12,7 +12,7 @@ interface Placement {
   visible: boolean;
 }
 
-function placements(mode: WipeMode): Record<Role, Placement> {
+export function placements(mode: WipeMode): Record<Role, Placement> {
   switch (mode) {
     case 'both':
       return { host: { width: SIZES.normal, visible: true }, guest: { width: SIZES.normal, visible: true } };

@@ -81,7 +81,7 @@ export class ShowStore {
       const s = JSON.parse(raw) as ShowState;
       if (s.lessonId !== this.lesson.id) return null;
       // 授業の場面が減っていたら範囲に収める
-      const settings = { ...DEFAULT_SETTINGS, ...s.settings };
+      const settings = { ...DEFAULT_SETTINGS, ...s.settings, captions: { ...DEFAULT_SETTINGS.captions, ...s.settings?.captions } };
       const fresh = initialState(this.lesson, settings);
       const scenes = effectiveLesson(this.lesson, settings).scenes.length;
       return {

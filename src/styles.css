@@ -901,3 +901,27 @@ button:disabled {
   object-fit: contain;
   display: block;
 }
+
+/* 話し声の字幕（表示画面） */
+.captions {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.captions__line {
+  background: rgba(20, 20, 20, 0.86);
+  color: #fff;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 6px 22px;
+  border-radius: 12px;
+  max-width: 100%;
+  text-align: center;
+}
+.captions__line.is-interim {
+  color: #e9e4d8;
+}

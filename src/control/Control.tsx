@@ -11,6 +11,8 @@ import { clearAll } from '../media/photos';
 import { KeyHelp } from '../stage/Stage';
 import { StageCanvas } from '../stage/StageCanvas';
 import { CameraPanel } from './CameraPanel';
+import { useCaptionEngine } from '../captions/engine';
+import { CaptionsPanel } from './CaptionsPanel';
 import { MusicPanel } from './MusicPanel';
 import { SettingsPanel } from './SettingsPanel';
 import { SlidesPanel } from './SlidesPanel';
@@ -26,11 +28,12 @@ export function openDisplay() {
   window.open(`${location.pathname}${location.search}#/`, 'wind-display', 'width=1280,height=720');
 }
 
-type Tab = 'slides' | 'camera' | 'music' | 'settings';
+type Tab = 'slides' | 'camera' | 'music' | 'captions' | 'settings';
 const TABS: [Tab, string][] = [
   ['slides', 'スライド'],
   ['camera', 'カメラ・ワイプ'],
   ['music', '音楽'],
+  ['captions', '字幕'],
   ['settings', '切り替え・時計'],
 ];
 
@@ -67,6 +70,8 @@ export function Control() {
     [],
   );
   useKeys(local);
+  // 字幕の聞き取りはこの窓で動かす（タブを切り替えても止めない）
+  useCaptionEngine();
 
   const scene = lesson.scenes[state.sceneIndex];
   const next = lesson.scenes[state.sceneIndex + 1];
@@ -115,6 +120,7 @@ export function Control() {
           )}
           {state.blackout && <span className="badge badge--black">黒画面中</span>}
           {state.music.playing && <span className="badge">♪ 再生中</span>}
+          {state.settings.captions.enabled && <span className="badge">字幕 ON</span>}
           <DisplayIndicator onHelp={() => setPanel('zoom')} />
           <button onClick={() => setPanel('zoom')}>Zoom で共有</button>
           <button onClick={openDisplay}>表示画面を開く</button>
@@ -184,6 +190,7 @@ export function Control() {
             {tab === 'slides' && <SlidesPanel />}
             {tab === 'camera' && <CameraPanel />}
             {tab === 'music' && <MusicPanel />}
+            {tab === 'captions' && <CaptionsPanel />}
             {tab === 'settings' && <SettingsPanel />}
           </div>
           <div className="c-tools">
