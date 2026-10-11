@@ -68,15 +68,9 @@ export function Stage() {
     tracker.zoom = state.settings.wipeZoom;
   }, [state.settings.wipeZoom]);
 
-  // 前にカメラを許可していれば、開いたときに自動で始める
+  // 開いたらカメラを始める（初めてなら、この窓にブラウザの許可の確認が出る）
   useEffect(() => {
-    const perms = navigator.permissions as Permissions | undefined;
-    perms
-      ?.query({ name: 'camera' as PermissionName })
-      .then((p) => {
-        if (p.state === 'granted' && tracker.status === 'idle') void tracker.start();
-      })
-      .catch(() => {});
+    if (tracker.status === 'idle') void tracker.start();
   }, []);
 
   // マウスは動かしたときだけ出し、2秒止まったら隠す（共有の画面に矢印を残さない）

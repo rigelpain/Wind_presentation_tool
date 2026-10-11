@@ -142,6 +142,10 @@ class FaceTracker {
     this.emit();
   }
 
+  /** いまどこで待っているか（起動中の案内に使う） */
+  phase: '' | 'permission' | 'model' = '';
+  private startId = 0;
+
   async start(deviceId?: string) {
     if (deviceId !== undefined) {
       this.deviceId = deviceId;
@@ -151,35 +155,77 @@ class FaceTracker {
         /* なくてよい */
       }
     }
+    const id = ++this.startId;
     this.stopStream();
     this.status = 'starting';
     this.error = '';
+    this.phase = 'permission';
     this.emit();
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          deviceId: this.deviceId ? { exact: this.deviceId } : undefined,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 },
-        },
-      });
-      this.video.srcObject = this.stream;
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('この開き方ではカメラを使えません。http://localhost の住所で開いてください（IP の住所や file:// では使えません）。');
+      }
+      let stream: MediaStream;
+      try {
+        stream = await this.open(this.deviceId);
+      } catch (e) {
+        // 前に選んだカメラが見つからない（抜いた、別のプロフィール）ときは、既定のカメラでやり直す
+        const name = (e as { name?: string })?.name;
+        if (!this.deviceId || (name !== 'OverconstrainedError' && name !== 'NotFoundError')) throw e;
+        this.deviceId = '';
+        try {
+          localStorage.removeItem('wind-camera-device');
+        } catch {
+          /* なくてよい */
+        }
+        stream = await this.open('');
+      }
+      if (id !== this.startId) {
+        // 待っているあいだに別の起動が始まった
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      this.stream = stream;
+      this.video.srcObject = stream;
       await this.video.play();
       await this.listDevices();
-      await this.ensureDetectors();
+      this.deviceId = stream.getVideoTracks()[0]?.getSettings().deviceId ?? this.deviceId;
+      this.phase = 'model';
+      this.emit();
+      try {
+        await this.ensureDetectors();
+      } catch (e) {
+        // 顔検出が読めなくても、カメラは止めない。ワイプは左右の半分を映す
+        this.detector = null;
+        this.error = `顔検出を読み込めませんでした（ワイプは画面の左右の半分を映します）: ${e instanceof Error ? e.message : String(e)}`;
+      }
+      if (id !== this.startId) return;
       this.status = 'running';
+      this.phase = '';
       this.tracks.A.reset();
       this.tracks.B.reset();
       this.running = true;
       this.emit();
       this.loop();
     } catch (e) {
+      if (id !== this.startId) return;
       this.status = 'error';
+      this.phase = '';
       this.error = describeError(e);
       this.emit();
     }
+  }
+
+  private open(deviceId: string): Promise<MediaStream> {
+    return navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        frameRate: { ideal: 30 },
+      },
+    });
   }
 
   /** カメラの代わりに動画か画像のファイルで試す（予行やカメラのない環境での確認用） */
@@ -269,7 +315,11 @@ class FaceTracker {
 
   private tick() {
     const det = this.detector;
-    if (!det || this.video.readyState < 2) return;
+    if (this.video.readyState < 2) return;
+    if (!det) {
+      this.retreat(performance.now());
+      return;
+    }
     if (this.video.currentTime === this.lastVideoTime) return;
     this.lastVideoTime = this.video.currentTime;
     const now = performance.now();
@@ -535,12 +585,19 @@ async function createDetector(mode: 'VIDEO' | 'IMAGE'): Promise<FaceDetector> {
 }
 
 function describeError(e: unknown): string {
-  if (e instanceof DOMException) {
-    if (e.name === 'NotAllowedError') return 'カメラの使用が許可されていません。ブラウザの設定で許可してください。';
-    if (e.name === 'NotFoundError' || e.name === 'OverconstrainedError') return 'カメラが見つかりません。つなぎ直すか、別のカメラを選んでください。';
-    if (e.name === 'NotReadableError') return 'カメラを別のアプリが使っています。会議ツールのカメラを止めるか、別のカメラを選んでください。';
+  const name = (e as { name?: string })?.name ?? '';
+  const message = (e as { message?: string })?.message ?? '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    if (/system/i.test(message)) {
+      return 'macOS がブラウザにカメラを許可していません。システム設定 → プライバシーとセキュリティ → カメラ で Google Chrome をオンにし、Chrome を終了して開き直してください。';
+    }
+    return 'ブラウザでカメラが許可されていません。表示画面の窓の、住所の左（アプリの窓では右上の「⋮」→ サイトの情報）からカメラを「許可」にして、もう一度「カメラを始める」を押してください。';
   }
-  return e instanceof Error ? e.message : String(e);
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return 'カメラが見つかりません。USB をつなぎ直すか、別のカメラを選んでください。';
+  if (name === 'NotReadableError' || name === 'AbortError') {
+    return 'カメラを開けません。ほかのアプリ（Zoom、FaceTime、Photo Booth、カメラの付属ソフト）が使っていないか確かめ、閉じてからもう一度押してください。';
+  }
+  return message || String(e);
 }
 
 export const tracker = new FaceTracker();

@@ -16,6 +16,8 @@ export interface CameraStatus {
   fps: number;
   /** 2人それぞれを見失っているか（A＝登録で左の人、B＝右の人） */
   lost: { A: boolean; B: boolean };
+  /** 起動中にどこで待っているか */
+  phase: '' | 'permission' | 'model';
   /** 全体で2人そろわず、左右に分けて探している */
   tiled: boolean;
   /** 届いた時刻（表示画面が開いているかの目安） */
@@ -43,6 +45,7 @@ function statusNow(): CameraStatus {
     fps: Math.round(tracker.fps),
     lost: { A: tracker.isLost('A'), B: tracker.isLost('B') },
     tiled: tracker.tiled,
+    phase: tracker.phase,
     at: Date.now(),
   };
 }

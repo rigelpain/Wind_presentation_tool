@@ -38,7 +38,13 @@ export function CameraSetup({ state, lesson, onClose }: { state: ShowState; less
             <canvas ref={canvas} />
             {tracker.status !== 'running' && (
               <div className="setup__placeholder">
-                {tracker.status === 'starting' ? 'カメラを起動しています…' : tracker.status === 'error' ? tracker.error : '「カメラを始める」を押してください'}
+                {tracker.status === 'starting'
+                  ? tracker.phase === 'model'
+                    ? '顔検出を読み込んでいます…'
+                    : 'カメラの許可を待っています。ブラウザの「許可」を押してください'
+                  : tracker.status === 'error'
+                    ? tracker.error
+                    : '「カメラを始める」を押してください'}
               </div>
             )}
           </div>

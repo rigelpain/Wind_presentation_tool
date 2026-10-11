@@ -43,10 +43,13 @@ export function CameraPanel() {
     if (status.status === 'starting')
       return (
         <div className="camera__empty">
-          カメラを起動しています…（表示画面にカメラの許可が出たら、表示画面で許可してください）
+          {status.phase === 'model'
+            ? 'カメラがつながりました。顔検出を読み込んでいます…'
+            : 'カメラの許可を待っています。表示画面の窓に「カメラの使用を許可しますか」が出ているので、表示画面で「許可」を押してください'}
         </div>
       );
     if (status.status === 'error') return <div className="camera__empty camera__empty--error">{status.error}</div>;
+    if (status.error) return <div className="camera__empty camera__empty--error">{status.error}</div>;
     return <div className="camera__empty">確認の絵を待っています…</div>;
   };
 
