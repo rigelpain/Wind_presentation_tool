@@ -106,16 +106,18 @@
   justify-content: center;
 }
 .cbox__box > span:first-child {
+  /* 表示画面と同じく、下に寄せて折り返し、はみ出した上の行は隠す */
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   overflow: hidden;
-  max-height: 100%;
+  height: 100%;
   width: 100%;
 }
 .cbox__line {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: clip;
+  display: block;
+  flex: none;
+  overflow-wrap: anywhere;
 }
 .cbox__text--nobg {
   -webkit-text-stroke: 0.14em #000;
