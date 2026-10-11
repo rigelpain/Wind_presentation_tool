@@ -2,19 +2,22 @@
 // 指示書: docs/briefs/12_カメラとワイプ.md
 import { openDisplay } from './Control';
 import { RemotePreview } from '../wipe/RemotePreview';
-import { dispatch, useLesson, useShow } from '../engine/store';
+import { dispatch, getStore, useLesson, useShow } from '../engine/store';
 import type { Role, WipeMode } from '../engine/types';
 import { useCameraRemote } from '../wipe/bus';
 import { trackOf } from '../wipe/WipeLayer';
 import './CameraPanel.css';
 
-const MODES: [WipeMode, string][] = [
-  ['both', '2人'],
-  ['explain', '解説を大きく'],
-  ['host', '進行だけ'],
-  ['guest', '解説だけ'],
-  ['hidden', 'カメラを隠す'],
-];
+/** ワイプの見せ方のボタン。名前は登録した役割名から作る */
+function modes(names: Record<Role, string>): [WipeMode, string][] {
+  return [
+    ['both', '2人'],
+    ['explain', `${names.guest}を大きく`],
+    ['host', `${names.host}だけ`],
+    ['guest', `${names.guest}だけ`],
+    ['hidden', 'カメラを隠す'],
+  ];
+}
 
 export function CameraPanel() {
   const state = useShow();
@@ -109,12 +112,27 @@ export function CameraPanel() {
 
       <div className="camera__section">
         <h3>2人の登録</h3>
+        <div className="camera__roles">
+          {(['host', 'guest'] as Role[]).map((role) => (
+            <label key={role} className="camera__role">
+              <span>{role === 'host' ? '左の人（左下のワイプ）' : '右の人（右下のワイプ）'}</span>
+              <input
+                type="text"
+                maxLength={12}
+                value={state.settings.roleLabels?.[role] ?? ''}
+                placeholder={getStore().lesson.roleLabels[role]}
+                onChange={(e) => dispatch({ type: 'settings', patch: { roleLabels: { ...state.settings.roleLabels, [role]: e.target.value } } })}
+              />
+              <span>役</span>
+            </label>
+          ))}
+        </div>
         <p className="hint">
-          2人ともカメラに映った状態で押します。画面で左に映っている人が「{lesson.roleLabels.host}」、右の人が「{lesson.roleLabels.guest}」になります。
+          2人ともカメラに映った状態で押します。画面で左に映っている人が「{lesson.roleLabels.host}」、右の人が「{lesson.roleLabels.guest}」になります。役の名前はワイプの名札に出るので、実名ではなく役の名前にします（空なら授業の名前）。「{lesson.roleLabels.guest}」の方が、解説モード（E）で大きくなります。
         </p>
         <div className="camera__row">
           <button className="primary" disabled={!running} onClick={() => cam.register()}>
-            登録する
+            登録する（左＝{lesson.roleLabels.host}、右＝{lesson.roleLabels.guest}）
           </button>
           <button onClick={() => dispatch({ type: 'swap' })}>左右を入れ替える{swapped ? ' ✓' : ''}</button>
         </div>
@@ -123,13 +141,13 @@ export function CameraPanel() {
       <div className="camera__section">
         <h3>ワイプの見せ方</h3>
         <div className="camera__modes">
-          {MODES.map(([m, label]) => (
+          {modes(lesson.roleLabels).map(([m, label]) => (
             <button key={m} className={mode === m ? 'is-on' : ''} onClick={() => dispatch({ type: 'wipe', mode: m })}>
               {label}
             </button>
           ))}
         </div>
-        <p className="hint">キー: E＝解説を大きく ・ H＝カメラを隠す ・ W＝2人同じ大きさ ・ S＝左右を入れ替え</p>
+        <p className="hint">キー: E＝{lesson.roleLabels.guest}を大きく ・ H＝カメラを隠す ・ W＝2人同じ大きさ ・ S＝左右を入れ替え</p>
       </div>
 
       <div className="camera__section">

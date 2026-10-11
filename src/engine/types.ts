@@ -110,6 +110,8 @@ export interface ShowSettings {
   wipeScale: number;
   /** 顔の切り出しの寄り（1 が標準。大きいほど顔に寄る。0.6〜1.8） */
   wipeZoom: number;
+  /** ワイプの役割名の上書き（登録のときに左の人＝host、右の人＝guest の名前を決める）。空なら授業のデータのまま */
+  roleLabels: Partial<Record<Role, string>>;
 }
 
 export interface MusicState {

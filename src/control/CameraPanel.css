@@ -106,3 +106,18 @@
   padding: 0;
   accent-color: #f1ede4;
 }
+
+.camera__roles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.camera__role {
+  display: grid;
+  grid-template-columns: 9.5em 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.camera__role input {
+  min-width: 0;
+}

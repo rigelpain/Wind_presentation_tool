@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: ShowSettings = {
   stageClock: 'none',
   wipeScale: 1,
   wipeZoom: 1,
+  roleLabels: {},
 };
 
 /** 設定の並びを、授業のデータの場面に合わせる（消えた場面を外し、新しい場面を後ろに足す） */
@@ -71,7 +72,13 @@ export function effectiveLesson(base: Lesson, settings: ShowSettings): Lesson {
     .map((o) => o.scene);
   // 全部飛ばしたときは、最初の場面だけ残す（画面が空にならないように）
   if (scenes.length === 0 && base.scenes[0]) scenes = [applyOverride(base.scenes[0], settings)];
-  const lesson: Lesson = { ...base, durationMin: settings.durationMin ?? base.durationMin, scenes };
+  const names = settings.roleLabels ?? {};
+  const lesson: Lesson = {
+    ...base,
+    durationMin: settings.durationMin ?? base.durationMin,
+    roleLabels: { host: names.host?.trim() || base.roleLabels.host, guest: names.guest?.trim() || base.roleLabels.guest },
+    scenes,
+  };
   if (!effCache.has(settings)) effCache.set(settings, new Map());
   effCache.get(settings)!.set(base, lesson);
   return lesson;
