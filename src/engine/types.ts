@@ -43,6 +43,10 @@ export interface Scene {
   closesLoop?: string;
   /** この場面に入ったときの音楽。曲の id で流し始め、'stop' で止める。省くとそのまま */
   music?: string;
+  /** 次の予告。この場面の最後の段階で、表示画面に「つぎ ▶ …」を出す */
+  teaser?: boolean;
+  /** 予告の文。省くと次の場面の名前 */
+  teaserText?: string;
   props?: Record<string, unknown>;
 }
 
@@ -69,7 +73,8 @@ export type EffectKind =
   | 'loop-close' // あとで回収した
   | 'unlock' // 進み具合を見せた・次を解放した
   | 'camera-hide' // カメラを隠した
-  | 'scene-move'; // 画面を動かして切り替えた
+  | 'scene-move' // 画面を動かして切り替えた
+  | 'teaser'; // 次に来るものを予告した
 
 export interface EffectEvent {
   kind: EffectKind;
@@ -89,6 +94,10 @@ export interface SceneOverride {
   wipe?: WipeMode;
   /** 曲の id で流し始め、'stop' で止める、'' で授業のデータのまま */
   music?: string;
+  /** 次の予告を出すか */
+  teaser?: boolean;
+  /** 予告の文 */
+  teaserText?: string;
 }
 
 export interface CaptionSettings {

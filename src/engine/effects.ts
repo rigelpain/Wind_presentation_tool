@@ -25,6 +25,7 @@ export const EFFECTS: Record<EffectKind, EffectInfo> = {
   unlock: { label: '進み具合を見せた', why: 'ゴールまでの距離が見えると、続けたくなる', color: '#6B7280' },
   'camera-hide': { label: 'カメラを隠した', why: '見えない間に、何かが変わるかもしれない', color: '#9F1239' },
   'scene-move': { label: '画面を動かして切り替えた', why: '動きの向きで、話が進んだと分かる', color: '#4B5563' },
+  teaser: { label: '次に来るものを予告した', why: '次が分かると、待つ構えができる', color: '#B45309' },
 };
 
 export const EFFECT_ORDER: EffectKind[] = [
@@ -40,4 +41,5 @@ export const EFFECT_ORDER: EffectKind[] = [
   'unlock',
   'camera-hide',
   'scene-move',
+  'teaser',
 ];

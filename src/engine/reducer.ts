@@ -154,9 +154,23 @@ function boardKey(b: BoardState, key: string, cells: number): BoardState {
   return b;
 }
 
+/** 予告を出す場面の最後の段階に来たら、予告を出したと記録する */
+function withTeaser(prev: ShowState, next: ShowState, lesson: Lesson, now: number): ShowState {
+  if (next === prev || (next.sceneIndex === prev.sceneIndex && next.step === prev.step)) return next;
+  const scene = lesson.scenes[next.sceneIndex];
+  if (!scene?.teaser || !lesson.scenes[next.sceneIndex + 1]) return next;
+  if (next.step !== stepsOf(scene).length - 1) return next;
+  return log(next, ['teaser'], now, lesson);
+}
+
 export function reduce(s: ShowState, action: Action, base: Lesson): ShowState {
   const now = Date.now();
   const lesson = effectiveLesson(base, s.settings);
+  const r = reduceInner(s, action, base, lesson, now);
+  return action.type === 'next' || action.type === 'goto' ? withTeaser(s, r, lesson, now) : r;
+}
+
+function reduceInner(s: ShowState, action: Action, base: Lesson, lesson: Lesson, now: number): ShowState {
   const scene = lesson.scenes[s.sceneIndex];
   const steps = scene ? stepsOf(scene) : [[]];
 

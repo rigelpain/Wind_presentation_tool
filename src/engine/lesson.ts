@@ -37,6 +37,8 @@ export function applyOverride(scene: Scene, settings: ShowSettings): Scene {
     transition: o.transition ?? scene.transition ?? settings.defaultTransition,
     wipe: o.wipe ?? scene.wipe,
     music: o.music ? o.music : scene.music,
+    teaser: o.teaser ?? scene.teaser,
+    teaserText: o.teaserText?.trim() ? o.teaserText : scene.teaserText,
   };
 }
 

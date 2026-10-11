@@ -6,6 +6,7 @@ import {
   Blend,
   ChevronDown,
   EyeOff,
+  Megaphone,
   GripVertical,
   Layers,
   ListOrdered,
@@ -90,7 +91,7 @@ export function SlidesPanel() {
   const override = (sceneId: string, patch: SceneOverride) => dispatch({ type: 'scene-override', sceneId, patch });
 
   const resetAll = () => {
-    if (!confirm('並び・飛ばし・場面ごとの上書き（切り替え・ワイプ・音楽）を、授業のデータどおりに戻します。よろしいですか？')) return;
+    if (!confirm('並び・飛ばし・場面ごとの上書き（切り替え・ワイプ・音楽・次の予告）を、授業のデータどおりに戻します。よろしいですか？')) return;
     dispatch({ type: 'settings', patch: { order: null, skipped: [], overrides: {} } });
   };
 
@@ -99,7 +100,11 @@ export function SlidesPanel() {
       <Section
         icon={ListOrdered}
         title="並び"
-        help={<p>ドラッグか ↑↓ で並べ替え。目のアイコンで飛ばす。変えた並びは授業のデータには書き戻さず、このPCに残ります。</p>}
+        help={
+          <p>
+            ドラッグか ↑↓ で並べ替え。目のアイコンで飛ばす。拡声器のアイコンで「次の予告」を入り切り（その場面の最後の段階で、表示画面の右上に「つぎ ▶ 次の場面」が出る。文は開いた中で変えられる）。変えた並びは授業のデータには書き戻さず、このPCに残ります。
+          </p>
+        }
         aside={<IconButton icon={RotateCcw} label="元に戻す" title="並び・飛ばし・場面ごとの上書きを、授業のデータどおりに戻す" onClick={resetAll} />}
       >
         <ul className="slides__list">
@@ -110,6 +115,9 @@ export function SlidesPanel() {
             const isDone = o.index >= 0 && o.index < state.sceneIndex;
             const ov = state.settings.overrides[id] ?? {};
             const open = openId === id;
+            // 次の予告に出す場面（飛ばす場面を除いた、並びの上で次の場面）
+            const nextScene = list.slice(pos + 1).find((x) => !x.skipped)?.scene;
+            const teaserOn = !!scene.teaser;
             const cls = ['slides__row', isNow && 'is-now', isDone && 'is-done', overId === id && 'is-over']
               .filter(Boolean)
               .join(' ');
@@ -161,6 +169,13 @@ export function SlidesPanel() {
                     <span className="slides__kind">{scene.kind}</span>
                   </div>
                   <IconButton
+                    icon={Megaphone}
+                    title={teaserOn ? `次の予告を出している（押すと出さない）: ${scene.teaserText?.trim() || nextScene?.title || ''}` : '次の予告を出す'}
+                    active={teaserOn}
+                    disabled={!nextScene}
+                    onClick={() => override(id, { teaser: !teaserOn })}
+                  />
+                  <IconButton
                     icon={EyeOff}
                     title={o.skipped ? '飛ばしている（押すと戻す）' : '飛ばす'}
                     active={o.skipped}
@@ -200,6 +215,19 @@ export function SlidesPanel() {
 
                     <Row icon={PictureInPicture2} label="ワイプ">
                       <Segmented options={WIPE_OPTIONS} value={ov.wipe ?? ''} onChange={(v) => override(id, { wipe: pick<WipeMode>(v) })} />
+                    </Row>
+
+                    <Row icon={Megaphone} label="次の予告">
+                      <input
+                        type="text"
+                        className="slides__teaser"
+                        maxLength={40}
+                        disabled={!teaserOn}
+                        value={ov.teaserText ?? ''}
+                        placeholder={scene.teaserText || nextScene?.title || '（次の場面がありません）'}
+                        onChange={(e) => override(id, { teaserText: e.target.value || undefined })}
+                        title="表示画面に「つぎ ▶ …」と出す文。空なら次の場面の名前"
+                      />
                     </Row>
 
                     <Row icon={Music} label="音楽">

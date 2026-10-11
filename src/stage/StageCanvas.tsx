@@ -1,7 +1,7 @@
 // 1920×1080 の舞台を描く。表示画面でも、コントロール画面の縮小表示（いま・次）でも使う。
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { STAGE_W as W, stageHeight } from '../engine/aspect';
-import { getKind } from '../engine/registry';
+import { getKind, stepsOf } from '../engine/registry';
 import { dispatch, getStore, useNow } from '../engine/store';
 import type { Lesson, Scene, ShowState, Transition } from '../engine/types';
 import { WipeLayer } from '../wipe/WipeLayer';
@@ -131,16 +131,30 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
           <div className="stage__scene stage__end">{preview === 'next' ? 'おわり' : ''}</div>
         )}
         <WipeLayer state={wipeState} lesson={lesson} placeholder={preview ? 'ワイプ' : undefined} />
-        {state.openLoops.length > 0 && !scene?.props?.hideLoops && (
-          <div className="loops">
-            {state.openLoops.map((l) => (
-              <div key={l.id} className="loops__item">
-                <span className="loops__tag">あとで</span>
-                {l.text}
-              </div>
-            ))}
-          </div>
-        )}
+        {(() => {
+          // 次の予告: 予告を出す場面の最後の段階で、次の場面を知らせる
+          const nextScene = preview !== 'next' && live ? lesson.scenes[index + 1] : undefined;
+          const showTeaser = !!(scene?.teaser && nextScene && step >= stepsOf(scene).length - 1);
+          const showLoops = state.openLoops.length > 0 && !scene?.props?.hideLoops;
+          if (!showTeaser && !showLoops) return null;
+          return (
+            <div className="loops">
+              {showTeaser && (
+                <div className="loops__item loops__item--next" key={`next-${scene!.id}`}>
+                  <span className="loops__tag loops__tag--next">つぎ ▶</span>
+                  {scene!.teaserText?.trim() || nextScene!.title}
+                </div>
+              )}
+              {showLoops &&
+                state.openLoops.map((l) => (
+                  <div key={l.id} className="loops__item">
+                    <span className="loops__tag">あとで</span>
+                    {l.text}
+                  </div>
+                ))}
+            </div>
+          );
+        })()}
         {!preview && <StageClock state={state} lesson={lesson} />}
         {preview !== 'next' && <CaptionsLayer state={state} />}
         {phase.kind === 'black' && <div className="dip" key={`dip-${phase.at}`} />}

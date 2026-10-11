@@ -1132,3 +1132,22 @@ button:disabled {
   background: rgba(20, 20, 20, 0.9);
   border-color: #fff;
 }
+
+/* 次の予告（表示画面の右上） */
+.loops__item--next {
+  border-color: var(--accent);
+  animation: teaser-in var(--move) var(--ease) both;
+}
+.loops__tag--next {
+  background: var(--accent);
+}
+@keyframes teaser-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
