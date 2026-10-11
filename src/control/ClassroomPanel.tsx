@@ -27,21 +27,13 @@ function saveCrop(c: Crop) {
   }
 }
 
-/** 盛り上がりの言葉 */
-export function heatWord(score: number): string {
-  if (score < 0.12) return '静か';
-  if (score < 0.3) return 'ざわざわ';
-  if (score < 0.55) return '盛り上がっている';
-  return 'とても盛り上がっている';
-}
-
 /** 上の帯に出す小さな盛り上がりの印 */
 export function ClassroomBadge() {
   const st = useClassroom();
   if (st.status !== 'running') return null;
   const pct = Math.round((st.latest?.score ?? 0) * 100);
   return (
-    <span className="badge classroom-badge" title={`教室: ${heatWord(st.latest?.score ?? 0)}（${pct}）`}>
+    <span className="badge classroom-badge" title="教室の盛り上がり（音と動き）">
       <Flame size={14} aria-hidden />
       <span className="classroom-badge__bar">
         <span style={{ width: `${pct}%` }} />
@@ -131,15 +123,6 @@ function Graph() {
       if (c.height !== h) c.height = h;
       const ctx = c.getContext('2d')!;
       ctx.clearRect(0, 0, w, h);
-      // 目安の線（ざわざわ・盛り上がり）
-      ctx.strokeStyle = 'rgba(241,237,228,0.12)';
-      ctx.lineWidth = 1;
-      for (const t of [0.3, 0.55]) {
-        ctx.beginPath();
-        ctx.moveTo(0, h - t * h);
-        ctx.lineTo(w, h - t * h);
-        ctx.stroke();
-      }
       const hist = classroom.history;
       if (hist.length < 2) return;
       const end = Date.now();
@@ -230,16 +213,12 @@ export function ClassroomPanel() {
         help={
           <>
             <p>音の大きさ（笑い声や話し声）と、枠の中の動きの量（手が挙がる、体が動く）をまとめた目安です。音が取れているときは音を6、動きを4の割合で見ます。</p>
-            <p>グラフはこの2分。赤が盛り上がり、水色が音、黄緑が動き。横の薄い線は「ざわざわ」「盛り上がっている」の目安です。教室の静かなときに下の方、盛り上がったときに上の方に来るよう、感度で合わせます。</p>
+            <p>グラフはこの2分。赤が盛り上がり、水色が音、黄緑が動き。教室の静かなときに下の方、盛り上がったときに上の方に来るよう、感度で合わせます。</p>
           </>
         }
       >
         <div className={`classroom__meter ${running ? '' : 'is-off'}`}>
-          <div className="classroom__score">
-            <span className="classroom__num">{running ? pct(s?.score) : '—'}</span>
-            <span className="classroom__word">{running ? heatWord(s?.score ?? 0) : '取り込むと測ります'}</span>
-          </div>
-          <div className="classroom__bar">
+          <div className="classroom__bar classroom__bar--big">
             <span style={{ width: `${running ? pct(s?.score) : 0}%` }} />
           </div>
         </div>
