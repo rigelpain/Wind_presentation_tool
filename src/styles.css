@@ -1103,3 +1103,32 @@ button:disabled {
 .c-tools__spacer {
   flex: 1;
 }
+
+/* 表示画面の全画面ボタン。マウスを動かしたときだけ出す */
+.display-fs {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 90;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(20, 20, 20, 0.72);
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms;
+}
+.display.is-pointer .display-fs {
+  opacity: 1;
+  pointer-events: auto;
+}
+.display-fs:hover {
+  background: rgba(20, 20, 20, 0.9);
+  border-color: #fff;
+}

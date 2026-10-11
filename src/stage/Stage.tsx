@@ -1,5 +1,6 @@
 // 表示画面（プロジェクターに映す・会議ツールで共有する窓）。カメラと顔追尾はこの窓で動く。
 // 操作はコントロール画面（P で開く）からでも、この窓のキーからでもできる。
+import { Maximize, Minimize } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { KEY_HELP, useKeys } from '../engine/keys';
 import { useLesson, useShow } from '../engine/store';
@@ -19,8 +20,9 @@ export function openControl() {
 }
 
 function toggleFullscreen() {
-  if (document.fullscreenElement) void document.exitFullscreen();
-  else void document.documentElement.requestFullscreen();
+  // 全画面を許さない環境（埋め込みの画面など）では何もしない
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  else document.documentElement.requestFullscreen?.().catch(() => {});
 }
 
 export function Stage() {
@@ -92,11 +94,29 @@ export function Stage() {
   return (
     <div className={`display ${cursor ? 'is-pointer' : ''}`}>
       <StageCanvas state={state} lesson={lesson} />
+      <FullscreenButton />
       <MusicPlayer role="display" />
       {panel === 'camera' && <CameraSetup state={state} lesson={lesson} onClose={() => setPanel('none')} />}
       {panel === 'photos' && <PhotoTray onClose={() => setPanel('none')} />}
       {panel === 'help' && <KeyHelp onClose={() => setPanel('none')} />}
     </div>
+  );
+}
+
+/** 全画面の入り切り。マウスを動かしたときだけ右上に出る（共有の画面に残さない） */
+function FullscreenButton() {
+  const [full, setFull] = useState(() => !!document.fullscreenElement);
+  useEffect(() => {
+    const on = () => setFull(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', on);
+    return () => document.removeEventListener('fullscreenchange', on);
+  }, []);
+  const Icon = full ? Minimize : Maximize;
+  const title = full ? '全画面を終える（F / Esc）' : '全画面にする（F）';
+  return (
+    <button className="display-fs" onClick={toggleFullscreen} title={title} aria-label={title}>
+      <Icon size={22} aria-hidden />
+    </button>
   );
 }
 
