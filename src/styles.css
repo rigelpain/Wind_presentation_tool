@@ -914,8 +914,12 @@ button:disabled {
 .captions.is-idle {
   opacity: 0;
 }
+.captions--fixed .captions__window {
+  width: 100%;
+}
 .captions__window {
   position: relative;
+  box-sizing: border-box;
   overflow: hidden;
   max-width: 100%;
   min-width: 40%;

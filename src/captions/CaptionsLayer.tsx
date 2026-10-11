@@ -2,13 +2,10 @@
 // 左右のワイプのあいだの帯に出す。帯が狭いとき（解説モードなど）はワイプの上に出す。
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { useNow } from '../engine/store';
-import type { Role, ShowState } from '../engine/types';
-import { WIPE_ASPECT } from '../wipe/tracker';
-import { MARGIN, placements } from '../wipe/WipeLayer';
+import type { ShowState } from '../engine/types';
 import { useCaptions, type CaptionLine } from './engine';
+import { captionFontSize, captionRect, LINE_RATIO } from './layout';
 
-const W = 1920;
-const GAP = 32;
 const MOVE_MS = 320;
 
 export function CaptionsLayer({ state }: { state: ShowState }) {
@@ -52,31 +49,17 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
   }, [key]);
 
   if (!c.enabled) return null;
-  const lineH = Math.round(c.size * 1.4);
+  const size = captionFontSize(c);
+  const lineH = Math.round(size * LINE_RATIO);
   const bgNone = c.bg === 'none';
-  const style: CSSProperties = { fontSize: c.size, color: c.color || '#FFFFFF' };
-  if (c.position === 'top') {
-    Object.assign(style, { top: 40, left: 160, right: 160 });
-  } else {
-    const place = placements(state.wipe.mode);
-    const k = state.settings.wipeScale;
-    const width = (role: Role) => (place[role].visible ? place[role].width * k : 0);
-    const left = MARGIN + (width('host') ? width('host') + GAP : 0);
-    const right = MARGIN + (width('guest') ? width('guest') + GAP : 0);
-    if (W - left - right >= 720) {
-      Object.assign(style, { bottom: MARGIN, left, right });
-    } else {
-      // 帯が狭いときは、ワイプの上に出す
-      const tallest = Math.max(width('host'), width('guest')) / WIPE_ASPECT;
-      Object.assign(style, { bottom: MARGIN + tallest + GAP, left: 160, right: 160 });
-    }
-  }
+  const { rect, fixed } = captionRect(state);
+  const style: CSSProperties = { fontSize: size, color: c.color || '#FFFFFF', left: rect.x, top: rect.y, width: rect.w, height: rect.h };
   return (
-    <div className={`captions ${idle ? 'is-idle' : ''} ${bgNone ? 'captions--nobg' : ''}`} style={style} aria-live="polite">
+    <div className={`captions ${idle ? 'is-idle' : ''} ${bgNone ? 'captions--nobg' : ''} ${fixed ? 'captions--fixed' : ''}`} style={style} aria-live="polite">
       <div
         className="captions__window"
         ref={win}
-        style={{ height: lineH * c.lines + 16, lineHeight: `${lineH}px`, background: bgNone ? 'transparent' : c.bg || '#141414' }}
+        style={{ height: rect.h, lineHeight: `${lineH}px`, background: bgNone ? 'transparent' : c.bg || '#141414' }}
       >
         <div className="captions__stack">
           {items.map((it) => (

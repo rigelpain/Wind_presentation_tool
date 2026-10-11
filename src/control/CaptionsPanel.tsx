@@ -1,6 +1,8 @@
 // コントロール画面の「字幕」の枠。話し声を聞き取って、表示画面に字幕を出す。
 import { useCaptions, useCaptionStatus } from '../captions/engine';
+import { captionFontSize, captionHeight, captionRect } from '../captions/layout';
 import { labelText } from '../engine/labelColors';
+import { CaptionBoxEditor } from './CaptionBoxEditor';
 import { dispatch, useShow } from '../engine/store';
 import type { CaptionSettings } from '../engine/types';
 import './CaptionsPanel.css';
@@ -28,10 +30,27 @@ const CAPTION_BGS: [string, string][] = [
 ];
 
 export function CaptionsPanel() {
-  const c = useShow().settings.captions;
+  const state = useShow();
+  const c = state.settings.captions;
   const status = useCaptionStatus();
   const cap = useCaptions();
   const set = (patch: Partial<CaptionSettings>) => dispatch({ type: 'settings', patch: { captions: { ...c, ...patch } } });
+  /** 行の数。自由な位置のときは、字の大きさを保って箱の高さを変える */
+  const setLines = (lines: 1 | 2) => {
+    if (c.position === 'free' && c.box) {
+      const size = captionFontSize(c);
+      const h = captionHeight(size, lines);
+      set({ lines, box: { ...c.box, y: Math.max(0, c.box.y + c.box.h - h), h } });
+    } else set({ lines });
+  };
+  /** 字の大きさ。自由な位置のときは、箱の高さを変えて合わせる（下の辺を基準にする） */
+  const setSize = (size: number) => {
+    if (c.position === 'free' && c.box) {
+      const h = captionHeight(size, c.lines);
+      const y = Math.max(0, c.box.y + c.box.h - h);
+      set({ size, box: { ...c.box, y, h: Math.min(h, 1080) } });
+    } else set({ size });
+  };
   /** 地の色を変える。白い字に白い地のように読めなくなるときは、字を白か墨に入れ替える */
   const setBg = (bg: string) => {
     const color = (c.color || '#FFFFFF').toUpperCase();
@@ -79,8 +98,8 @@ export function CaptionsPanel() {
       <h3>見た目</h3>
       <label className="captions-panel__row">
         字の大きさ
-        <input type="range" min={36} max={96} step={2} value={c.size} onChange={(e) => set({ size: Number(e.target.value) })} />
-        <span>{c.size}px</span>
+        <input type="range" min={24} max={120} step={2} value={captionFontSize(c)} onChange={(e) => setSize(Number(e.target.value))} />
+        <span>{captionFontSize(c)}px</span>
       </label>
       <div className="captions-panel__row">
         字の色
@@ -127,18 +146,22 @@ export function CaptionsPanel() {
       <div className="captions-panel__row">
         位置
         <button className={c.position === 'bottom' ? 'is-on' : ''} onClick={() => set({ position: 'bottom' })}>
-          下（ワイプのあいだ）
+          自動（ワイプのあいだ）
         </button>
         <button className={c.position === 'top' ? 'is-on' : ''} onClick={() => set({ position: 'top' })}>
           上
         </button>
+        <button className={c.position === 'free' ? 'is-on' : ''} onClick={() => set({ position: 'free', box: c.box ?? captionRect(state).rect })}>
+          自由（ドラッグ）
+        </button>
       </div>
+      <CaptionBoxEditor />
       <div className="captions-panel__row">
         行の数（多いときは上へ送られて消える）
-        <button className={c.lines === 1 ? 'is-on' : ''} onClick={() => set({ lines: 1 })}>
+        <button className={c.lines === 1 ? 'is-on' : ''} onClick={() => setLines(1)}>
           1行
         </button>
-        <button className={c.lines === 2 ? 'is-on' : ''} onClick={() => set({ lines: 2 })}>
+        <button className={c.lines === 2 ? 'is-on' : ''} onClick={() => setLines(2)}>
           2行
         </button>
       </div>

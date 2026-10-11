@@ -60,3 +60,121 @@
   /* 地なしの見え方を確かめやすいよう、明るい地の上に置く */
   background-image: linear-gradient(90deg, #f5f2ea, #a5c8ff) !important;
 }
+
+/* 字幕の位置の編集 */
+.cbox__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f5f2ea;
+  border: 1px solid #46433b;
+  touch-action: none;
+}
+.cbox__stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.cbox__wipe {
+  position: absolute;
+  background: #3a3833;
+  border: 8px solid #fff;
+  border-radius: 20px;
+  color: #bbb;
+  font-size: 48px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cbox__box {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 14px;
+  padding: 8px 26px;
+  font-weight: 700;
+  text-align: center;
+  cursor: move;
+  outline: 10px dashed #e8452c;
+  outline-offset: 6px;
+  overflow: visible;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.cbox__box > span:first-child {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 100%;
+  width: 100%;
+}
+.cbox__line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.cbox__text--nobg {
+  -webkit-text-stroke: 0.14em #000;
+  paint-order: stroke fill;
+}
+.cbox__grip {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  background: #e8452c;
+  border: 8px solid #fff;
+  border-radius: 50%;
+}
+.cbox__grip--n,
+.cbox__grip--s {
+  left: calc(50% - 28px);
+  cursor: ns-resize;
+}
+.cbox__grip--e,
+.cbox__grip--w {
+  top: calc(50% - 28px);
+  cursor: ew-resize;
+}
+.cbox__grip--n {
+  top: -36px;
+}
+.cbox__grip--s {
+  bottom: -36px;
+}
+.cbox__grip--e {
+  right: -36px;
+}
+.cbox__grip--w {
+  left: -36px;
+}
+.cbox__grip--ne,
+.cbox__grip--nw,
+.cbox__grip--se,
+.cbox__grip--sw {
+  width: 64px;
+  height: 64px;
+}
+.cbox__grip--ne {
+  top: -40px;
+  right: -40px;
+  cursor: nesw-resize;
+}
+.cbox__grip--sw {
+  bottom: -40px;
+  left: -40px;
+  cursor: nesw-resize;
+}
+.cbox__grip--nw {
+  top: -40px;
+  left: -40px;
+  cursor: nwse-resize;
+}
+.cbox__grip--se {
+  bottom: -40px;
+  right: -40px;
+  cursor: nwse-resize;
+}

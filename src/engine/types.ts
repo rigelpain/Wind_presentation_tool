@@ -96,7 +96,10 @@ export interface CaptionSettings {
   enabled: boolean;
   /** 字の大きさ（px、1920×1080 の座標） */
   size: number;
-  position: 'bottom' | 'top';
+  /** bottom: ワイプのあいだ（自動）、top: 上、free: box の位置と大きさ（ドラッグで決める） */
+  position: 'bottom' | 'top' | 'free';
+  /** free のときの字幕の箱（1920×1080 の座標）。高さで字の大きさが決まる */
+  box: { x: number; y: number; w: number; h: number } | null;
   /** 出す行の数 */
   lines: 1 | 2;
   /** 話が止まってから消えるまで（秒） */
