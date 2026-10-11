@@ -95,7 +95,7 @@
 
 .camera__name {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
   width: 100%;
@@ -115,4 +115,19 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 名札の入力欄は、名札そのものの色で見せる */
+.control .camera__tagInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 30px;
+  font-weight: 800;
+  border-radius: 8px;
+  border: 1px solid #46433b;
+  padding: 4px 10px;
+}
+.control .camera__tagInput::placeholder {
+  color: inherit;
+  opacity: 0.55;
 }

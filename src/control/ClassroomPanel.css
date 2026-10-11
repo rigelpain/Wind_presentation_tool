@@ -7,8 +7,6 @@
 .classroom__view canvas {
   display: block;
   width: 100%;
-  cursor: crosshair;
-  touch-action: none;
 }
 .classroom__meter {
   display: flex;
@@ -36,18 +34,6 @@
   display: block;
   background: #1b1a18;
   border-radius: 8px;
-}
-.classroom__parts {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  color: #cfc8b8;
-}
-.classroom__parts span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-variant-numeric: tabular-nums;
 }
 .classroom-badge {
   display: inline-flex;

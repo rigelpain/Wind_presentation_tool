@@ -8,7 +8,7 @@ import { dispatch, getStore, useLesson, useShow } from '../engine/store';
 import type { Role, WipeMode } from '../engine/types';
 import { useCameraRemote } from '../wipe/bus';
 import { trackOf } from '../wipe/WipeLayer';
-import { IconButton, Row, Section, Segmented, Slider, Status, Swatches, Toggle, type SegOption } from './ui';
+import { ColorDot, IconButton, Row, Section, Segmented, Slider, Status, Toggle, type SegOption } from './ui';
 import './CameraPanel.css';
 
 /** ワイプの見せ方の切り替え。名札は自由に書くので、ボタンは左右で呼ぶ */
@@ -138,23 +138,24 @@ export function CameraPanel() {
         {(['host', 'guest'] as Role[]).map((role) => {
           const cur = state.settings.labelColors?.[role] ?? DEFAULT_LABEL_BG;
           return (
-            <Row key={role} icon={role === 'host' ? PanelLeft : PanelRight} label={role === 'host' ? '左の人' : '右の人'}>
+            <Row key={role} icon={role === 'host' ? PanelLeft : PanelRight} label={role === 'host' ? '左' : '右'}>
               <span className="camera__name">
                 <input
                   type="text"
                   maxLength={24}
+                  className="camera__tagInput"
+                  style={{ background: cur, color: labelText(cur) }}
                   value={state.settings.roleLabels?.[role] ?? ''}
                   placeholder={getStore().lesson.roleLabels[role]}
+                  aria-label={role === 'host' ? '左の人の名札' : '右の人の名札'}
                   onChange={(e) => dispatch({ type: 'settings', patch: { roleLabels: { ...state.settings.roleLabels, [role]: e.target.value } } })}
                 />
-                <Swatches
+                <ColorDot
+                  title="名札の色"
                   colors={LABEL_SWATCHES.map((c) => ({ name: c.name, value: c.bg }))}
                   value={cur}
                   onChange={(v) => dispatch({ type: 'settings', patch: { labelColors: { ...state.settings.labelColors, [role]: v } } })}
                 />
-                <span className="camera__tag" style={{ background: cur, color: labelText(cur) }}>
-                  {lesson.roleLabels[role]}
-                </span>
               </span>
             </Row>
           );

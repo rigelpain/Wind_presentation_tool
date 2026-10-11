@@ -290,3 +290,30 @@
 .control .ui-swatch-custom {
   height: 28px;
 }
+
+/* 色の丸1つ（押すと一覧） */
+.ui-colordot {
+  position: relative;
+  display: inline-flex;
+}
+.control .ui-colordot__btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #f1ede4;
+  box-shadow: 0 0 0 1px #46433b;
+}
+.ui-colordot__pop {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  z-index: 50;
+  background: #1b1a18;
+  border: 1px solid #46433b;
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  width: max-content;
+  max-width: 240px;
+}

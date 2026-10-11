@@ -3,7 +3,7 @@
 // - 説明は「？」を押したときだけ出す（いつも出しておかない）
 // - 選ぶものは、ボタンを並べた切り替え（Segmented）か、色の丸（Swatches）
 import { CircleHelp, RotateCcw, type LucideIcon } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import './ui.css';
 
 export function Section({ icon: Icon, title, help, children, aside }: { icon: LucideIcon; title: string; help?: ReactNode; children: ReactNode; aside?: ReactNode }) {
@@ -139,6 +139,44 @@ export function Status({ tone, children }: { tone: 'ok' | 'warn' | 'bad' | 'idle
     <span className={`ui-status ui-status--${tone}`}>
       <span className="ui-status__dot" aria-hidden />
       {children}
+    </span>
+  );
+}
+
+/** 色の丸1つ。押すと色の一覧が開き、選ぶと閉じる（いつも一覧を出しておかない） */
+export function ColorDot({ colors, value, onChange, title }: { colors: { name: string; value: string }[]; value: string; onChange: (v: string) => void; title: string }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, [open]);
+  return (
+    <span className="ui-colordot" ref={box}>
+      <button
+        className="ui-colordot__btn"
+        style={value === 'none' ? undefined : { background: value }}
+        title={title}
+        aria-label={title}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      />
+      {open && (
+        <span className="ui-colordot__pop">
+          <Swatches
+            colors={colors}
+            value={value}
+            onChange={(v) => {
+              onChange(v);
+              setOpen(false);
+            }}
+          />
+        </span>
+      )}
     </span>
   );
 }

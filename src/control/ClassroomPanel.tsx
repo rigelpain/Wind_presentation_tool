@@ -1,40 +1,28 @@
-// コントロール画面の「教室」の枠。Zoom の窓（やブラウザのタブ）を取り込み、教室の盛り上がりを見える形にする。
-import { Activity, AudioLines, Crop as CropIcon, Flame, MonitorPlay, PersonStanding, Square } from 'lucide-react';
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
-import { classroom, CLASSROOM_HISTORY_MS, useClassroom, type Crop } from '../classroom/monitor';
+// コントロール画面の「教室」の枠。Zoom の窓（やブラウザのタブ）を取り込み、教室の様子を見ながら音量を出す。
+import { Activity, MonitorPlay, Square, Volume2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { classroom, CLASSROOM_HISTORY_MS, useClassroom } from '../classroom/monitor';
 import { IconButton, Row, Section, Slider, Status } from './ui';
 import './ClassroomPanel.css';
 
-const CROP_KEY = 'wind-classroom-crop';
 const GAIN_KEY = 'wind-classroom-gain';
 
-// 前に選んだ枠と感度を戻す（このPCにだけ置く）
+// 前に決めた感度を戻す（このPCにだけ置く）
 try {
-  const c = JSON.parse(localStorage.getItem(CROP_KEY) ?? 'null') as Crop | null;
-  if (c && c.w > 0.02 && c.h > 0.02) classroom.crop = c;
   const g = Number(localStorage.getItem(GAIN_KEY));
   if (g > 0) classroom.gain = g;
 } catch {
   /* なくてよい */
 }
 
-function saveCrop(c: Crop) {
-  classroom.crop = c;
-  try {
-    localStorage.setItem(CROP_KEY, JSON.stringify(c));
-  } catch {
-    /* なくてよい */
-  }
-}
-
-/** 上の帯に出す小さな盛り上がりの印 */
+/** 上の帯に出す小さな音量の印（取り込んでいるあいだだけ） */
 export function ClassroomBadge() {
   const st = useClassroom();
-  if (st.status !== 'running') return null;
-  const pct = Math.round((st.latest?.score ?? 0) * 100);
+  if (st.status !== 'running' || !st.hasAudio) return null;
+  const pct = Math.round((st.latest?.level ?? 0) * 100);
   return (
-    <span className="badge classroom-badge" title="教室の盛り上がり（音と動き）">
-      <Flame size={14} aria-hidden />
+    <span className="badge classroom-badge" title="教室の音量">
+      <Volume2 size={14} aria-hidden />
       <span className="classroom-badge__bar">
         <span style={{ width: `${pct}%` }} />
       </span>
@@ -44,11 +32,6 @@ export function ClassroomBadge() {
 
 function LiveView() {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const drag = useRef<{ x: number; y: number } | null>(null);
-  const [draft, setDraft] = useState<Crop | null>(null);
-  const draftRef = useRef<Crop | null>(null);
-  draftRef.current = draft;
-
   useEffect(() => {
     let raf = 0;
     const draw = () => {
@@ -60,51 +43,14 @@ function LiveView() {
       const h = Math.round((w * v.videoHeight) / v.videoWidth);
       if (c.width !== w) c.width = w;
       if (c.height !== h) c.height = h;
-      const ctx = c.getContext('2d')!;
-      ctx.drawImage(v, 0, 0, w, h);
-      const r = draftRef.current ?? classroom.crop;
-      const full = r.x <= 0 && r.y <= 0 && r.w >= 1 && r.h >= 1;
-      if (!full) {
-        // 枠の外を暗くする
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
-        ctx.fillRect(0, 0, w, r.y * h);
-        ctx.fillRect(0, (r.y + r.h) * h, w, h - (r.y + r.h) * h);
-        ctx.fillRect(0, r.y * h, r.x * w, r.h * h);
-        ctx.fillRect((r.x + r.w) * w, r.y * h, w - (r.x + r.w) * w, r.h * h);
-      }
-      ctx.strokeStyle = '#e8452c';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(r.x * w + 1.5, r.y * h + 1.5, r.w * w - 3, r.h * h - 3);
+      c.getContext('2d')!.drawImage(v, 0, 0, w, h);
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, []);
-
-  const pos = (e: RPointerEvent) => {
-    const r = canvas.current!.getBoundingClientRect();
-    return { x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) };
-  };
-  const onDown = (e: RPointerEvent) => {
-    (e.target as Element).setPointerCapture(e.pointerId);
-    drag.current = pos(e);
-  };
-  const onMove = (e: RPointerEvent) => {
-    const s = drag.current;
-    if (!s) return;
-    const p = pos(e);
-    setDraft({ x: Math.min(s.x, p.x), y: Math.min(s.y, p.y), w: Math.abs(p.x - s.x), h: Math.abs(p.y - s.y) });
-  };
-  const onUp = () => {
-    drag.current = null;
-    const d = draftRef.current;
-    setDraft(null);
-    // 小さすぎる枠（ただのクリック）は無視する
-    if (d && d.w > 0.03 && d.h > 0.03) saveCrop(d);
-  };
-
   return (
     <div className="classroom__view">
-      <canvas ref={canvas} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} title="ドラッグで、見たい所（教室の人の映っている所）を囲む" />
+      <canvas ref={canvas} />
     </div>
   );
 }
@@ -127,19 +73,9 @@ function Graph() {
       if (hist.length < 2) return;
       const end = Date.now();
       const x = (at: number) => w - ((end - at) / CLASSROOM_HISTORY_MS) * w;
-      const line = (key: 'audio' | 'motion', color: string, width: number) => {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width * devicePixelRatio;
-        ctx.beginPath();
-        hist.forEach((s, i) => (i ? ctx.lineTo(x(s.at), h - s[key] * h) : ctx.moveTo(x(s.at), h - s[key] * h)));
-        ctx.stroke();
-      };
-      line('audio', 'rgba(125,211,252,0.55)', 1);
-      line('motion', 'rgba(190,242,100,0.55)', 1);
-      // 盛り上がり（塗り）
       ctx.beginPath();
       ctx.moveTo(x(hist[0].at), h);
-      hist.forEach((s) => ctx.lineTo(x(s.at), h - s.score * h));
+      hist.forEach((s) => ctx.lineTo(x(s.at), h - s.level * h));
       ctx.lineTo(x(hist[hist.length - 1].at), h);
       ctx.closePath();
       ctx.fillStyle = 'rgba(232,69,44,0.35)';
@@ -147,13 +83,13 @@ function Graph() {
       ctx.strokeStyle = '#e8452c';
       ctx.lineWidth = 2 * devicePixelRatio;
       ctx.beginPath();
-      hist.forEach((s, i) => (i ? ctx.lineTo(x(s.at), h - s.score * h) : ctx.moveTo(x(s.at), h - s.score * h)));
+      hist.forEach((s, i) => (i ? ctx.lineTo(x(s.at), h - s.level * h) : ctx.moveTo(x(s.at), h - s.level * h)));
       ctx.stroke();
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
   }, []);
-  return <canvas ref={canvas} className="classroom__graph" aria-label="この2分の盛り上がり" />;
+  return <canvas ref={canvas} className="classroom__graph" aria-label="この2分の音量" />;
 }
 
 export function ClassroomPanel() {
@@ -169,8 +105,8 @@ export function ClassroomPanel() {
     }
   };
   const running = st.status === 'running';
-  const s = st.latest;
-  const pct = (v: number | undefined) => `${Math.round((v ?? 0) * 100)}`;
+  const measuring = running && st.hasAudio;
+  const pct = Math.round((st.latest?.level ?? 0) * 100);
 
   return (
     <div className="c-panel classroom">
@@ -187,7 +123,7 @@ export function ClassroomPanel() {
         help={
           <>
             <p>「取り込む」を押し、Zoom の窓（または試しに YouTube などのブラウザのタブ）を選びます。Zoom では教室の参加者を「ピン留め」しておくと、その人が大きく映ります。</p>
-            <p>音を測るには、ブラウザの「タブ」を選んで「タブの音声も共有」をオンにします。Zoom の窓を選んだときは、Chrome と macOS によっては音が取れません（そのときは動きだけで測ります）。</p>
+            <p>音を測るには、ブラウザの「タブ」を選んで「タブの音声も共有」をオンにします。Zoom の窓を選んだときは、Chrome と macOS によっては音が取れず、映像だけになります。</p>
             <p>取り込んだ映像と音は、このPCの中で測るだけで、保存も送信もしません。</p>
           </>
         }
@@ -195,42 +131,21 @@ export function ClassroomPanel() {
         {st.status === 'idle' && !st.error && <Status tone="idle">取り込んでいません</Status>}
         {st.status === 'starting' && <Status tone="warn">取り込むものを選んでください</Status>}
         {st.status === 'error' && <Status tone="bad">{st.error}</Status>}
-        {running && (
-          <>
-            <Status tone={st.hasAudio ? 'ok' : 'warn'}>{st.hasAudio ? '音と動きを測っています' : '音は取れていません（動きだけで測っています）'}</Status>
-            <LiveView />
-            <Row icon={CropIcon} label="見る所">
-              <span className="hint">映像をドラッグして囲む</span>
-              <IconButton icon={CropIcon} label="全体" title="枠を全体に戻す" onClick={() => saveCrop({ x: 0, y: 0, w: 1, h: 1 })} />
-            </Row>
-          </>
-        )}
+        {running && !st.hasAudio && <Status tone="warn">音は取れていません（映像だけ）</Status>}
+        {running && <LiveView />}
       </Section>
 
       <Section
-        icon={Flame}
-        title="盛り上がり"
-        help={
-          <>
-            <p>音の大きさ（笑い声や話し声）と、枠の中の動きの量（手が挙がる、体が動く）をまとめた目安です。音が取れているときは音を6、動きを4の割合で見ます。</p>
-            <p>グラフはこの2分。赤が盛り上がり、水色が音、黄緑が動き。教室の静かなときに下の方、盛り上がったときに上の方に来るよう、感度で合わせます。</p>
-          </>
-        }
+        icon={Volume2}
+        title="音量"
+        help={<p>教室から届く音の大きさです。グラフはこの2分。静かなときに下の方、声が上がったときに上の方に来るよう、感度で合わせます。</p>}
       >
-        <div className={`classroom__meter ${running ? '' : 'is-off'}`}>
+        <div className={`classroom__meter ${measuring ? '' : 'is-off'}`}>
           <div className="classroom__bar classroom__bar--big">
-            <span style={{ width: `${running ? pct(s?.score) : 0}%` }} />
+            <span style={{ width: `${measuring ? pct : 0}%` }} />
           </div>
         </div>
         <Graph />
-        <div className="classroom__parts">
-          <span title="音の大きさ">
-            <AudioLines size={14} aria-hidden /> 音 {running && st.hasAudio ? pct(s?.audio) : '—'}
-          </span>
-          <span title="枠の中の動きの量">
-            <PersonStanding size={14} aria-hidden /> 動き {running ? pct(s?.motion) : '—'}
-          </span>
-        </div>
         <Row icon={Activity} label="感度">
           <Slider label="感度" min={0.5} max={3} step={0.1} value={gain} onChange={setGain} format={(v) => `×${v.toFixed(1)}`} reset={1} />
         </Row>
