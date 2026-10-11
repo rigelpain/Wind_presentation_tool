@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: ShowSettings = {
   wipeZoom: 1,
   roleLabels: {},
   labelScale: 1,
+  labelColors: {},
 };
 
 /** 設定の並びを、授業のデータの場面に合わせる（消えた場面を外し、新しい場面を後ろに足す） */

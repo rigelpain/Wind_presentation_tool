@@ -115,9 +115,44 @@
 .camera__role {
   display: grid;
   grid-template-columns: 7em minmax(0, 1fr);
+  row-gap: 4px;
   align-items: center;
   gap: 8px;
 }
 .camera__role input {
   min-width: 0;
+}
+
+.camera__swatches {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.control .camera__swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #46433b;
+}
+.control .camera__swatch.is-on {
+  outline: 2px solid #f1ede4;
+  outline-offset: 2px;
+}
+.camera__swatches input[type='color'] {
+  width: 30px;
+  height: 24px;
+  padding: 0 2px;
+}
+.camera__tagpreview {
+  font-weight: 800;
+  padding: 1px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  max-width: 12em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

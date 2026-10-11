@@ -2,6 +2,7 @@
 // 指示書: docs/briefs/12_カメラとワイプ.md
 import { openDisplay } from './Control';
 import { RemotePreview } from '../wipe/RemotePreview';
+import { DEFAULT_LABEL_BG, LABEL_SWATCHES, labelText } from '../engine/labelColors';
 import { dispatch, getStore, useLesson, useShow } from '../engine/store';
 import type { Role, WipeMode } from '../engine/types';
 import { useCameraRemote } from '../wipe/bus';
@@ -121,6 +122,35 @@ export function CameraPanel() {
                 placeholder={getStore().lesson.roleLabels[role]}
                 onChange={(e) => dispatch({ type: 'settings', patch: { roleLabels: { ...state.settings.roleLabels, [role]: e.target.value } } })}
               />
+              <span className="camera__swatches" role="radiogroup" aria-label="名札の色">
+                {LABEL_SWATCHES.map((c) => {
+                  const cur = state.settings.labelColors?.[role] ?? DEFAULT_LABEL_BG;
+                  return (
+                    <button
+                      key={c.bg}
+                      type="button"
+                      role="radio"
+                      aria-checked={cur.toUpperCase() === c.bg}
+                      title={c.name}
+                      className={`camera__swatch ${cur.toUpperCase() === c.bg ? 'is-on' : ''}`}
+                      style={{ background: c.bg }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        dispatch({ type: 'settings', patch: { labelColors: { ...state.settings.labelColors, [role]: c.bg } } });
+                      }}
+                    />
+                  );
+                })}
+                <input
+                  type="color"
+                  title="ほかの色"
+                  value={(state.settings.labelColors?.[role] ?? DEFAULT_LABEL_BG).toLowerCase()}
+                  onChange={(e) => dispatch({ type: 'settings', patch: { labelColors: { ...state.settings.labelColors, [role]: e.target.value.toUpperCase() } } })}
+                />
+                <span className="camera__tagpreview" style={{ background: state.settings.labelColors?.[role] ?? DEFAULT_LABEL_BG, color: labelText(state.settings.labelColors?.[role] ?? DEFAULT_LABEL_BG) }}>
+                  {lesson.roleLabels[role]}
+                </span>
+              </span>
             </label>
           ))}
         </div>

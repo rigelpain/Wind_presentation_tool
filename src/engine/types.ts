@@ -115,6 +115,8 @@ export interface ShowSettings {
    * このPCの状態にだけ置き、授業のデータやリポジトリには書かない
    */
   roleLabels: Partial<Record<Role, string>>;
+  /** 名札の地の色（#RRGGBB）。字の色は自動 */
+  labelColors: Partial<Record<Role, string>>;
   /** 名札の字の大きさ（1 が 32px。0.75〜2.5） */
   labelScale: number;
 }
