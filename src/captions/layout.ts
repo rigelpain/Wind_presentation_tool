@@ -8,7 +8,17 @@ export const STAGE_H = 1080;
 const GAP = 32;
 /** 箱の上下の余白の合計（px） */
 export const CAPTION_PAD = 16;
+/** 行の高さの既定（字の大きさの何倍か） */
 export const LINE_RATIO = 1.4;
+
+export function lineRatio(c: CaptionSettings): number {
+  return c.lineHeight && c.lineHeight > 0.5 ? c.lineHeight : LINE_RATIO;
+}
+
+/** 1行の高さ（px） */
+export function captionLineHeight(c: CaptionSettings, size = captionFontSize(c)): number {
+  return Math.round(size * lineRatio(c));
+}
 
 export interface Rect {
   x: number;
@@ -19,13 +29,13 @@ export interface Rect {
 
 /** 字の大きさ。自由な位置のときは、箱の高さに行が収まる大きさ */
 export function captionFontSize(c: CaptionSettings): number {
-  if (c.position === 'free' && c.box) return Math.max(20, Math.min(200, Math.floor((c.box.h - CAPTION_PAD) / (c.lines * LINE_RATIO))));
+  if (c.position === 'free' && c.box) return Math.max(20, Math.min(200, Math.floor((c.box.h - CAPTION_PAD) / (c.lines * lineRatio(c)))));
   return c.size;
 }
 
-/** 字の大きさと行の数から、箱の高さ */
-export function captionHeight(size: number, lines: number): number {
-  return Math.round(size * LINE_RATIO) * lines + CAPTION_PAD;
+/** 字の大きさと行の数と行の高さから、箱の高さ */
+export function captionHeight(size: number, lines: number, ratio = LINE_RATIO): number {
+  return Math.round(size * ratio) * lines + CAPTION_PAD;
 }
 
 /**
@@ -33,7 +43,7 @@ export function captionHeight(size: number, lines: number): number {
  */
 export function captionRect(state: ShowState): { rect: Rect; fixed: boolean } {
   const c = state.settings.captions;
-  const h = captionHeight(captionFontSize(c), c.lines);
+  const h = captionHeight(captionFontSize(c), c.lines, lineRatio(c));
   if (c.position === 'free' && c.box) return { rect: c.box, fixed: true };
   if (c.position === 'top') return { rect: { x: 160, y: 40, w: STAGE_W - 320, h }, fixed: false };
   const place = placements(state.wipe.mode);

@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { useNow } from '../engine/store';
 import type { ShowState } from '../engine/types';
 import { useCaptions, type CaptionLine } from './engine';
-import { captionFontSize, captionRect, LINE_RATIO } from './layout';
+import { captionFontSize, captionLineHeight, captionRect } from './layout';
 
 const MOVE_MS = 320;
 
@@ -50,7 +50,7 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
 
   if (!c.enabled) return null;
   const size = captionFontSize(c);
-  const lineH = Math.round(size * LINE_RATIO);
+  const lineH = captionLineHeight(c, size);
   const bgNone = c.bg === 'none';
   const { rect, fixed } = captionRect(state);
   const style: CSSProperties = { fontSize: size, color: c.color || '#FFFFFF', left: rect.x, top: rect.y, width: rect.w, height: rect.h };

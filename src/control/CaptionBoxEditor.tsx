@@ -1,7 +1,7 @@
 // 字幕の位置と大きさを、画面の縮図の上でドラッグして決める。
 // 箱をつかんで動かす。辺や角をつかんで大きさを変える（高さを変えると字の大きさが変わる）。
 import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
-import { captionFontSize, captionRect, CAPTION_PAD, LINE_RATIO, STAGE_H, STAGE_W, wipeRects, type Rect } from '../captions/layout';
+import { captionFontSize, captionLineHeight, captionRect, CAPTION_PAD, lineRatio, STAGE_H, STAGE_W, wipeRects, type Rect } from '../captions/layout';
 import { dispatch, useShow } from '../engine/store';
 
 type Grip = 'move' | 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -36,7 +36,7 @@ export function CaptionBoxEditor() {
   }, []);
 
   const rect = captionRect(state).rect;
-  const minH = Math.round(20 * LINE_RATIO) * c.lines + CAPTION_PAD;
+  const minH = Math.round(20 * lineRatio(c)) * c.lines + CAPTION_PAD;
 
   const send = (box: Rect, force = false) => {
     const now = performance.now();
@@ -85,7 +85,7 @@ export function CaptionBoxEditor() {
   };
 
   const size = captionFontSize(c);
-  const lineH = Math.round(size * LINE_RATIO);
+  const lineH = captionLineHeight(c, size);
   const bgNone = c.bg === 'none';
 
   return (

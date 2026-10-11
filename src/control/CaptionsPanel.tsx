@@ -1,6 +1,6 @@
 // コントロール画面の「字幕」の枠。話し声を聞き取って、表示画面に字幕を出す。
 import { useCaptions, useCaptionStatus } from '../captions/engine';
-import { captionFontSize, captionHeight, captionRect } from '../captions/layout';
+import { captionFontSize, captionHeight, captionRect, lineRatio } from '../captions/layout';
 import { labelText } from '../engine/labelColors';
 import { CaptionBoxEditor } from './CaptionBoxEditor';
 import { dispatch, useShow } from '../engine/store';
@@ -39,17 +39,25 @@ export function CaptionsPanel() {
   const setLines = (lines: 1 | 2) => {
     if (c.position === 'free' && c.box) {
       const size = captionFontSize(c);
-      const h = captionHeight(size, lines);
+      const h = captionHeight(size, lines, lineRatio(c));
       set({ lines, box: { ...c.box, y: Math.max(0, c.box.y + c.box.h - h), h } });
     } else set({ lines });
   };
   /** 字の大きさ。自由な位置のときは、箱の高さを変えて合わせる（下の辺を基準にする） */
   const setSize = (size: number) => {
     if (c.position === 'free' && c.box) {
-      const h = captionHeight(size, c.lines);
+      const h = captionHeight(size, c.lines, lineRatio(c));
       const y = Math.max(0, c.box.y + c.box.h - h);
       set({ size, box: { ...c.box, y, h: Math.min(h, 1080) } });
     } else set({ size });
+  };
+  /** 行間。自由な位置のときは、字の大きさを保って箱の高さを変える（下の辺を基準にする） */
+  const setLineHeight = (lineHeight: number) => {
+    if (c.position === 'free' && c.box) {
+      const size = captionFontSize(c);
+      const h = Math.min(1080, captionHeight(size, c.lines, lineHeight));
+      set({ lineHeight, box: { ...c.box, y: Math.max(0, c.box.y + c.box.h - h), h } });
+    } else set({ lineHeight });
   };
   /** 地の色を変える。白い字に白い地のように読めなくなるときは、字を白か墨に入れ替える */
   const setBg = (bg: string) => {
@@ -100,6 +108,12 @@ export function CaptionsPanel() {
         字の大きさ
         <input type="range" min={24} max={120} step={2} value={captionFontSize(c)} onChange={(e) => setSize(Number(e.target.value))} />
         <span>{captionFontSize(c)}px</span>
+      </label>
+      <label className="captions-panel__row">
+        行間
+        <input type="range" min={1} max={2.2} step={0.05} value={lineRatio(c)} onChange={(e) => setLineHeight(Number(e.target.value))} />
+        <span>{lineRatio(c).toFixed(2)}倍</span>
+        <button onClick={() => setLineHeight(1.4)}>標準</button>
       </label>
       <div className="captions-panel__row">
         字の色

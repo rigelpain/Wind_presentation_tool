@@ -104,6 +104,8 @@ export interface CaptionSettings {
   lines: 1 | 2;
   /** 話が止まってから消えるまで（秒） */
   holdSec: number;
+  /** 行の高さ（字の大きさの何倍か。1.0〜2.2） */
+  lineHeight: number;
   /** 字の色（#RRGGBB） */
   color: string;
   /** 地の色（#RRGGBB）。'none' なら地なし（字に縁取りを付ける） */
