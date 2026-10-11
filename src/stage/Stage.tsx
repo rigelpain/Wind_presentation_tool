@@ -9,6 +9,7 @@ import { setSnapshot } from '../media/snapshots';
 import { serveCamera } from '../wipe/bus';
 import { CameraSetup } from '../wipe/CameraSetup';
 import { tracker } from '../wipe/tracker';
+import { useDisplayHeartbeat } from './heartbeat';
 import { StageCanvas } from './StageCanvas';
 
 export { STAGE_H, STAGE_W } from './StageCanvas';
@@ -41,8 +42,9 @@ export function Stage() {
   );
   useKeys(local);
 
-  // コントロール画面からのカメラの操作を受ける
+  // コントロール画面からのカメラの操作を受ける。描けているかも知らせる
   useEffect(() => serveCamera(), []);
+  useDisplayHeartbeat();
 
   // カメラを隠す前と後の静止画（変化盲の答え合わせ用）
   const prevMode = useRef(state.wipe.mode);

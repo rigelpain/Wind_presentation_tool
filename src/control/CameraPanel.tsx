@@ -57,7 +57,7 @@ export function CameraPanel() {
         {status && (
           <div className="camera__stat">
             <p className="hint">
-              検出 {status.faces} 人 / {status.fps} fps
+              検出 {status.faces} 人 / {status.fps} fps{status.tiled ? '（左右に分けて探しています）' : ''}
             </p>
             {(['host', 'guest'] as Role[]).map((role) => (
               <p key={role} className={`hint ${lostOf(role) ? 'camera__lost' : ''}`}>

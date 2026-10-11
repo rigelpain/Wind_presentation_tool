@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "fetch-model": "node scripts/fetch-model.mjs",
-    "postinstall": "node scripts/copy-wasm.mjs"
+    "postinstall": "node scripts/copy-wasm.mjs",
+    "show": "node scripts/show.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.1.0",

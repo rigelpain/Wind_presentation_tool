@@ -84,6 +84,9 @@ button:disabled {
   top: 50%;
   transform-origin: center;
   background: var(--paper);
+  /* コントロール画面の縮小表示でも、外側の明るい字の色を受け継がない */
+  color: var(--ink);
+  font-size: 16px;
   overflow: hidden;
 }
 .stage__scene {
@@ -842,4 +845,51 @@ button:disabled {
   .c-previews {
     grid-template-columns: 1fr;
   }
+}
+
+/* コントロール画面: 表示画面が描けているか */
+.control .c-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  max-width: 420px;
+  text-align: left;
+}
+.c-display__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+  background: #22c55e;
+}
+.control .c-display.is-warn {
+  border-color: #fbbf24;
+}
+.c-display.is-warn .c-display__dot {
+  background: #fbbf24;
+}
+.control .c-display.is-bad {
+  border-color: #ef4444;
+  color: #fecaca;
+}
+.c-display.is-bad .c-display__dot {
+  background: #ef4444;
+}
+.panel--guide {
+  width: min(760px, 94vw);
+}
+.guide {
+  margin: 0;
+  padding-left: 1.4em;
+  line-height: 1.75;
+  font-size: 15px;
+}
+.guide li {
+  margin-bottom: 8px;
+}
+.guide code {
+  background: #f1ede4;
+  padding: 1px 6px;
+  border-radius: 4px;
 }

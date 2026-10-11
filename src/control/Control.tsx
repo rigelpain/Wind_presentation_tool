@@ -14,6 +14,7 @@ import { CameraPanel } from './CameraPanel';
 import { MusicPanel } from './MusicPanel';
 import { SettingsPanel } from './SettingsPanel';
 import { SlidesPanel } from './SlidesPanel';
+import { DisplayIndicator, ZoomGuide } from './ZoomGuide';
 
 export function mmss(ms: number) {
   const neg = ms < 0;
@@ -56,7 +57,7 @@ export function Control() {
       /* なくてよい */
     }
   };
-  const [panel, setPanel] = useState<'none' | 'photos' | 'help'>('none');
+  const [panel, setPanel] = useState<'none' | 'photos' | 'help' | 'zoom'>('none');
   const local = useMemo(
     () => ({
       u: () => setPanel((p) => (p === 'photos' ? 'none' : 'photos')),
@@ -114,6 +115,8 @@ export function Control() {
           )}
           {state.blackout && <span className="badge badge--black">黒画面中</span>}
           {state.music.playing && <span className="badge">♪ 再生中</span>}
+          <DisplayIndicator onHelp={() => setPanel('zoom')} />
+          <button onClick={() => setPanel('zoom')}>Zoom で共有</button>
           <button onClick={openDisplay}>表示画面を開く</button>
         </div>
       </header>
@@ -201,6 +204,7 @@ export function Control() {
       <MusicPlayer role="control" />
       {panel === 'photos' && <PhotoTray onClose={() => setPanel('none')} />}
       {panel === 'help' && <KeyHelp onClose={() => setPanel('none')} />}
+      {panel === 'zoom' && <ZoomGuide onClose={() => setPanel('none')} />}
     </div>
   );
 }

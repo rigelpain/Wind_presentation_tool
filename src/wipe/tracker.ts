@@ -168,7 +168,7 @@ class FaceTracker {
       this.video.srcObject = this.stream;
       await this.video.play();
       await this.listDevices();
-      if (!this.detector) this.detector = await createDetector();
+      await this.ensureDetectors();
       this.status = 'running';
       this.tracks.A.reset();
       this.tracks.B.reset();
@@ -210,7 +210,7 @@ class FaceTracker {
         this.video.loop = true;
       }
       await this.video.play();
-      if (!this.detector) this.detector = await createDetector();
+      await this.ensureDetectors();
       this.status = 'running';
       this.tracks.A.reset();
       this.tracks.B.reset();
@@ -226,6 +226,17 @@ class FaceTracker {
 
   private fileUrl: string | null = null;
   private paintTimer = 0;
+
+  private async ensureDetectors() {
+    if (!this.detector) this.detector = await createDetector('VIDEO');
+    if (!this.tileDetector) {
+      try {
+        this.tileDetector = await createDetector('IMAGE');
+      } catch {
+        this.tileDetector = null; // 分けて探せなくても、全体の検出だけで動く
+      }
+    }
+  }
 
   private stopStream() {
     this.running = false;
@@ -268,16 +279,58 @@ class FaceTracker {
     } catch {
       return;
     }
-    const boxes: Box[] = [];
+    let boxes: Box[] = [];
     for (const d of result.detections) {
       const b = d.boundingBox;
       if (!b) continue;
       boxes.push({ x: b.originX, y: b.originY, w: b.width, h: b.height });
     }
+    // 全体で2人そろわないときは、左右に分けて大きくしてから探し直す（離れて座った顔も拾う）
+    this.tiled = false;
+    if (boxes.length < 2 && this.tileDetector) {
+      boxes = mergeBoxes(boxes, this.detectTiles());
+      this.tiled = true;
+    }
     this.detections = boxes;
     if (this.lastFrameT) this.fps = this.fps * 0.9 + (1000 / (now - this.lastFrameT)) * 0.1;
     this.lastFrameT = now;
     this.update(boxes, now);
+  }
+
+  /** 左右に分けて探したか（コントロール画面に出す） */
+  tiled = false;
+  private tileDetector: FaceDetector | null = null;
+  private tileCanvas: HTMLCanvasElement | null = null;
+
+  /** 画面の左 60% と右 60% を、それぞれ正方形に近い絵にして探す */
+  private detectTiles(): Box[] {
+    const det = this.tileDetector;
+    if (!det) return [];
+    const vw = this.width;
+    const vh = this.height;
+    const tw = vw * TILE_FRACTION;
+    if (!this.tileCanvas) this.tileCanvas = document.createElement('canvas');
+    const c = this.tileCanvas;
+    const k = Math.min(1, TILE_SIZE / Math.max(tw, vh));
+    c.width = Math.round(tw * k);
+    c.height = Math.round(vh * k);
+    const ctx = c.getContext('2d', { willReadFrequently: false })!;
+    const out: Box[] = [];
+    for (const sx of [0, vw - tw]) {
+      ctx.drawImage(this.video, sx, 0, tw, vh, 0, 0, c.width, c.height);
+      let r;
+      try {
+        r = det.detect(c);
+      } catch {
+        continue;
+      }
+      for (const d of r.detections) {
+        const b = d.boundingBox;
+        if (!b) continue;
+        out.push({ x: sx + b.originX / k, y: b.originY / k, w: b.width / k, h: b.height / k });
+      }
+    }
+    return out;
   }
 
   /** 画面での左から右の順に並べる（鏡のときは逆） */
@@ -445,12 +498,33 @@ class FaceTracker {
   }
 }
 
-async function createDetector(): Promise<FaceDetector> {
+/** 左右に分けて探すときの、1枚の幅（全体に対する割合）。真ん中は両方に入るように重ねる */
+const TILE_FRACTION = 0.6;
+/** 分けた絵の長い辺（px）。検出の前に縮める */
+const TILE_SIZE = 720;
+
+function iou(a: Box, b: Box): number {
+  const x1 = Math.max(a.x, b.x);
+  const y1 = Math.max(a.y, b.y);
+  const x2 = Math.min(a.x + a.w, b.x + b.w);
+  const y2 = Math.min(a.y + a.h, b.y + b.h);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  return inter / (a.w * a.h + b.w * b.h - inter || 1);
+}
+
+/** 同じ顔を二度数えないように重なったものをまとめる（先にあるものを残す） */
+export function mergeBoxes(first: Box[], more: Box[]): Box[] {
+  const out = [...first];
+  for (const b of more) if (!out.some((o) => iou(o, b) > 0.3)) out.push(b);
+  return out;
+}
+
+async function createDetector(mode: 'VIDEO' | 'IMAGE'): Promise<FaceDetector> {
   const base = import.meta.env.BASE_URL;
   const fileset = await FilesetResolver.forVisionTasks(`${base}mediapipe/wasm`);
   const options = (delegate: 'GPU' | 'CPU') => ({
     baseOptions: { modelAssetPath: `${base}models/blaze_face_short_range.tflite`, delegate },
-    runningMode: 'VIDEO' as const,
+    runningMode: mode,
     minDetectionConfidence: 0.5,
   });
   try {
