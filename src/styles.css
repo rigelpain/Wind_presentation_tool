@@ -921,20 +921,10 @@ button:disabled {
   min-width: 40%;
   padding: 8px 26px;
   border-radius: 14px;
-  background: rgba(20, 20, 20, 0.94);
+  background: rgb(20, 20, 20);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-}
-/* 上の端を地の色で覆って、送られた行が上に消えていくように見せる（地の箱は消さない） */
-.captions__window::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 34%;
-  background: linear-gradient(to bottom, rgb(20, 20, 20) 15%, rgba(20, 20, 20, 0));
-  z-index: 1;
-  pointer-events: none;
 }
 .captions__stack {
   display: flex;

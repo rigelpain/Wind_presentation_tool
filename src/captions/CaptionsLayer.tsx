@@ -20,21 +20,32 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
 
   // 行が動いたら、前の位置から今の位置へなめらかに送る（FLIP）
   const els = useRef(new Map<number, HTMLDivElement>());
+  const win = useRef<HTMLDivElement>(null);
   const tops = useRef(new Map<number, number>());
   const key = items.map((i) => `${i.id}:${i.text}`).join('|');
   useLayoutEffect(() => {
     const next = new Map<number, number>();
+    const winTop = win.current?.getBoundingClientRect().top ?? -Infinity;
     for (const [id, el] of els.current) {
       el.getAnimations().forEach((a) => a.cancel());
       const rect = el.getBoundingClientRect();
       const scale = rect.height / (el.offsetHeight || 1) || 1;
       const top = rect.top / scale;
+      // 窓の上に出た行（送り出される行）は、上へ動きながら薄くなって消える。窓の中の行は薄くしない
+      const leaving = rect.top + rect.height / 2 < winTop;
+      el.style.opacity = leaving ? '0' : '';
       next.set(id, top);
       const before = tops.current.get(id);
       if (before === undefined) {
         el.animate([{ transform: 'translateY(60%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: MOVE_MS, easing: 'ease-out' });
       } else if (Math.abs(before - top) > 0.5) {
-        el.animate([{ transform: `translateY(${before - top}px)` }, { transform: 'none' }], { duration: MOVE_MS, easing: 'ease-out' });
+        el.animate(
+          [
+            { transform: `translateY(${before - top}px)`, opacity: 1 },
+            { transform: 'none', opacity: leaving ? 0 : 1 },
+          ],
+          { duration: MOVE_MS, easing: 'ease-out' },
+        );
       }
     }
     tops.current = next;
@@ -61,7 +72,7 @@ export function CaptionsLayer({ state }: { state: ShowState }) {
   }
   return (
     <div className={`captions ${idle ? 'is-idle' : ''}`} style={style} aria-live="polite">
-      <div className="captions__window" style={{ height: lineH * c.lines + 16, lineHeight: `${lineH}px` }}>
+      <div className="captions__window" ref={win} style={{ height: lineH * c.lines + 16, lineHeight: `${lineH}px` }}>
         <div className="captions__stack">
           {items.map((it) => (
             <div
