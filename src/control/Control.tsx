@@ -18,6 +18,7 @@ import {
   NotebookPen,
   Play,
   RotateCcw,
+  School,
   ScreenShare,
   SlidersHorizontal,
   Sparkles,
@@ -38,6 +39,7 @@ import { clearAll } from '../media/photos';
 import { KeyHelp } from '../stage/Stage';
 import { StageCanvas } from '../stage/StageCanvas';
 import { CameraPanel } from './CameraPanel';
+import { ClassroomBadge, ClassroomPanel } from './ClassroomPanel';
 import { useCaptionEngine } from '../captions/engine';
 import { CaptionsPanel } from './CaptionsPanel';
 import { MicMeter } from '../captions/MicMeter';
@@ -59,10 +61,11 @@ export function openDisplay() {
   window.open(`${location.pathname}${location.search}#/`, 'wind-display', 'width=1280,height=720');
 }
 
-type Tab = 'slides' | 'camera' | 'music' | 'captions' | 'settings';
+type Tab = 'slides' | 'camera' | 'classroom' | 'music' | 'captions' | 'settings';
 const TABS: [Tab, string, LucideIcon][] = [
   ['slides', 'スライド', ListOrdered],
   ['camera', 'カメラ', Video],
+  ['classroom', '教室', School],
   ['music', '音楽', Music],
   ['captions', '字幕', Captions],
   ['settings', '表示', SlidersHorizontal],
@@ -150,6 +153,7 @@ export function Control() {
               <Captions size={14} /> <MicMeter compact />
             </span>
           )}
+          <ClassroomBadge />
           <DisplayIndicator onHelp={() => setPanel('zoom')} />
           <IconButton icon={ScreenShare} title="Zoom で共有する手順" label="Zoom" onClick={() => setPanel('zoom')} />
           <IconButton icon={MonitorUp} title="表示画面を開く" onClick={openDisplay} />
@@ -229,6 +233,7 @@ export function Control() {
           <div className="c-tabbody">
             {tab === 'slides' && <SlidesPanel />}
             {tab === 'camera' && <CameraPanel />}
+            {tab === 'classroom' && <ClassroomPanel />}
             {tab === 'music' && <MusicPanel />}
             {tab === 'captions' && <CaptionsPanel />}
             {tab === 'settings' && <SettingsPanel />}
