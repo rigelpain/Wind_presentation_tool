@@ -76,7 +76,7 @@ export function useKeys(local: LocalKeys) {
 export const KEY_HELP: [string, string][] = [
   ['→ / Space / PageDown', '進む（場面の中の次の段階も）'],
   ['← / PageUp', '戻る'],
-  ['E', '解説モード（解説の顔を大きく）の入り切り'],
+  ['E', '解説モード（右のワイプを大きく）の入り切り'],
   ['H', 'カメラを隠す・戻す'],
   ['W', 'ワイプを2人とも同じ大きさに'],
   ['S', 'ワイプの左右を入れ替える'],

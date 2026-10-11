@@ -2,23 +2,20 @@
 // 指示書: docs/briefs/12_カメラとワイプ.md
 import { openDisplay } from './Control';
 import { RemotePreview } from '../wipe/RemotePreview';
-import { wipeLabel } from '../engine/lesson';
 import { dispatch, getStore, useLesson, useShow } from '../engine/store';
 import type { Role, WipeMode } from '../engine/types';
 import { useCameraRemote } from '../wipe/bus';
 import { trackOf } from '../wipe/WipeLayer';
 import './CameraPanel.css';
 
-/** ワイプの見せ方のボタン。名前は登録した役割名から作る */
-function modes(names: Record<Role, string>): [WipeMode, string][] {
-  return [
-    ['both', '2人'],
-    ['explain', `${names.guest}を大きく`],
-    ['host', `${names.host}だけ`],
-    ['guest', `${names.guest}だけ`],
-    ['hidden', 'カメラを隠す'],
-  ];
-}
+/** ワイプの見せ方のボタン。名札は自由に書くので、ボタンは左右で呼ぶ */
+const MODES: [WipeMode, string][] = [
+  ['both', '2人'],
+  ['explain', '右を大きく'],
+  ['host', '左だけ'],
+  ['guest', '右だけ'],
+  ['hidden', 'カメラを隠す'],
+];
 
 export function CameraPanel() {
   const state = useShow();
@@ -116,28 +113,19 @@ export function CameraPanel() {
         <div className="camera__roles">
           {(['host', 'guest'] as Role[]).map((role) => (
             <label key={role} className="camera__role">
-              <span>{role === 'host' ? '左の人（左下のワイプ）' : '右の人（右下のワイプ）'}</span>
+              <span>{role === 'host' ? '左の人の名札' : '右の人の名札'}</span>
               <input
                 type="text"
-                maxLength={12}
+                maxLength={24}
                 value={state.settings.roleLabels?.[role] ?? ''}
                 placeholder={getStore().lesson.roleLabels[role]}
                 onChange={(e) => dispatch({ type: 'settings', patch: { roleLabels: { ...state.settings.roleLabels, [role]: e.target.value } } })}
-              />
-              <span>役：</span>
-              <input
-                type="text"
-                maxLength={12}
-                className="camera__person"
-                value={state.settings.personNames?.[role] ?? ''}
-                placeholder="名前（なくてよい）"
-                onChange={(e) => dispatch({ type: 'settings', patch: { personNames: { ...state.settings.personNames, [role]: e.target.value } } })}
               />
             </label>
           ))}
         </div>
         <p className="hint">
-          2人ともカメラに映った状態で押します。画面で左に映っている人が「{lesson.roleLabels.host}」、右の人が「{lesson.roleLabels.guest}」になります。名札は「{wipeLabel(lesson, state.settings, 'host')}」のように出ます（役が空なら授業の名前）。名前はこのPCにだけ置き、リポジトリには入りません。ほかの人の名前を出すときは、その人の了承を得てください。「{lesson.roleLabels.guest}」の方が、解説モード（E）で大きくなります。
+          2人ともカメラに映った状態で押します。画面で左に映っている人が左下のワイプ、右の人が右下のワイプになります。名札は書いたとおりに出ます（空なら「{getStore().lesson.roleLabels.host}」「{getStore().lesson.roleLabels.guest}」）。名札はこのPCにだけ置き、リポジトリには入りません。ほかの人の名前を出すときは、その人の了承を得てください。解説モード（E）では右の人が大きくなります。
         </p>
         <div className="camera__row">
           <button className="primary" disabled={!running} onClick={() => cam.register()}>
@@ -150,13 +138,13 @@ export function CameraPanel() {
       <div className="camera__section">
         <h3>ワイプの見せ方</h3>
         <div className="camera__modes">
-          {modes(lesson.roleLabels).map(([m, label]) => (
+          {MODES.map(([m, label]) => (
             <button key={m} className={mode === m ? 'is-on' : ''} onClick={() => dispatch({ type: 'wipe', mode: m })}>
               {label}
             </button>
           ))}
         </div>
-        <p className="hint">キー: E＝{lesson.roleLabels.guest}を大きく ・ H＝カメラを隠す ・ W＝2人同じ大きさ ・ S＝左右を入れ替え</p>
+        <p className="hint">キー: E＝右を大きく ・ H＝カメラを隠す ・ W＝2人同じ大きさ ・ S＝左右を入れ替え</p>
       </div>
 
       <div className="camera__section">
@@ -202,15 +190,22 @@ export function CameraPanel() {
           <input type="checkbox" checked={showLabels} onChange={() => dispatch({ type: 'labels' })} />
           ワイプに名札を出す
         </label>
-        <label className="camera__check">
+        <label className="camera__field">
+          名札の字の大きさ
           <input
-            type="checkbox"
-            checked={state.settings.showNames}
+            type="range"
+            min={0.75}
+            max={2.5}
+            step={0.05}
+            value={state.settings.labelScale ?? 1}
             disabled={!showLabels}
-            onChange={() => dispatch({ type: 'settings', patch: { showNames: !state.settings.showNames } })}
+            onChange={(e) => dispatch({ type: 'settings', patch: { labelScale: Number(e.target.value) } })}
           />
-          名札に名前も出す（「{lesson.roleLabels.host}役：名前」の形。名前を入れたときだけ）
+          <span>{Math.round(32 * (state.settings.labelScale ?? 1))}px</span>
+          <button onClick={() => dispatch({ type: 'settings', patch: { labelScale: 1 } })}>標準</button>
         </label>
+        <p className="hint">32px より小さいと、Zoom の共有では読みにくくなります。</p>
+
       </div>
 
       <p className="hint">顔の映像はこのPCのブラウザの中だけで使い、保存も送信もしません。</p>
