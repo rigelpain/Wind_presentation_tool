@@ -4,11 +4,17 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { useShow } from '../engine/store';
 
+export interface CaptionLine {
+  /** 行の番号。聞き取り中の行が確定しても同じ番号のまま（表示画面で行が飛ばないように） */
+  id: number;
+  text: string;
+}
+
 export interface CaptionMessage {
   /** 確定した文（新しいものが最後） */
-  finals: string[];
+  finals: CaptionLine[];
   /** 聞き取り中の文 */
-  interim: string;
+  interim: CaptionLine | null;
   /** 最後に声を聞いた時刻 */
   at: number;
 }
@@ -75,13 +81,14 @@ export function useCaptionEngine() {
     const ch = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL) : null;
     let rec: SR | null = null;
     let stopped = false;
-    let finals: string[] = [];
+    let finals: CaptionLine[] = [];
+    let nextId = 1;
     let restartTimer = 0;
     let local = false;
     let fatal = false;
 
     const post = (interim: string) => {
-      const msg: CaptionMessage = { finals: finals.slice(-4), interim, at: Date.now() };
+      const msg: CaptionMessage = { finals: finals.slice(-4), interim: interim ? { id: nextId, text: interim } : null, at: Date.now() };
       ch?.postMessage(msg);
     };
 
@@ -99,7 +106,7 @@ export function useCaptionEngine() {
           const r = e.results[i];
           const text = String(r[0]?.transcript ?? '').trim();
           if (!text) continue;
-          if (r.isFinal) finals = [...finals, text].slice(-4);
+          if (r.isFinal) finals = [...finals, { id: nextId++, text }].slice(-4);
           else interim += text;
         }
         post(interim);
@@ -149,7 +156,7 @@ export function useCaptionEngine() {
       } catch {
         /* もう止まっている */
       }
-      ch?.postMessage({ finals: [], interim: '', at: 0 } satisfies CaptionMessage);
+      ch?.postMessage({ finals: [], interim: null, at: 0 } satisfies CaptionMessage);
       ch?.close();
       setStatus({ state: 'off' });
     };

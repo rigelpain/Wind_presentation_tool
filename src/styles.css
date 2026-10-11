@@ -902,26 +902,106 @@ button:disabled {
   display: block;
 }
 
-/* 話し声の字幕（表示画面） */
+/* 話し声の字幕（表示画面）。決まった行数の窓の中を、下から上へ送る */
 .captions {
   position: absolute;
   z-index: 30;
   display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+.captions.is-idle {
+  opacity: 0;
+}
+.captions__window {
+  position: relative;
+  overflow: hidden;
+  max-width: 100%;
+  min-width: 40%;
+  padding: 8px 26px;
+  border-radius: 14px;
+  background: rgba(20, 20, 20, 0.94);
+  display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+}
+/* 上の端を地の色で覆って、送られた行が上に消えていくように見せる（地の箱は消さない） */
+.captions__window::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 34%;
+  background: linear-gradient(to bottom, rgb(20, 20, 20) 15%, rgba(20, 20, 20, 0));
+  z-index: 1;
   pointer-events: none;
 }
+.captions__stack {
+  display: flex;
+  flex-direction: column;
+}
 .captions__line {
-  background: rgba(20, 20, 20, 0.86);
   color: #fff;
   font-weight: 700;
-  line-height: 1.35;
-  padding: 6px 22px;
-  border-radius: 12px;
-  max-width: 100%;
   text-align: center;
+  will-change: transform;
 }
 .captions__line.is-interim {
   color: #e9e4d8;
+}
+
+/* マイクの音量（コントロール画面） */
+.mic {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mic__bar {
+  position: relative;
+  flex: 1;
+  min-width: 140px;
+  height: 14px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #0f0e0c;
+  border: 1px solid #46433b;
+}
+.mic--compact .mic__bar {
+  min-width: 80px;
+  width: 80px;
+  flex: none;
+  height: 10px;
+}
+.mic__fill {
+  position: absolute;
+  inset: 0;
+  /* -60〜0dB の帯で、-35dB（約42%）まで緑、-8dB（約87%）まで黄、その上が赤。右を切り取って今の大きさにする */
+  background: linear-gradient(90deg, #22c55e 0%, #22c55e 42%, #facc15 42%, #facc15 87%, #ef4444 87%);
+  transition: clip-path 60ms linear;
+}
+.mic__peak {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #f1ede4;
+}
+.mic__word {
+  font-size: 13px;
+  color: #cfc8b8;
+  min-width: 9em;
+}
+.mic__icon {
+  font-size: 12px;
+  color: #a9a395;
+}
+.mic--error {
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.badge--captions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
