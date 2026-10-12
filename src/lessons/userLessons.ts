@@ -36,13 +36,21 @@ export const isUserLesson = (id: string) => id.startsWith('u-');
 const newId = (head: string) => `${head}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 export const newSceneId = () => newId('s-');
 
+/** 新しい授業。構成は、最初のセクション（アイキャッチ）が1つだけ */
 export function newLesson(title = '新しい授業'): Lesson {
+  const section = newId('n-');
   return {
     id: newId('u-'),
     title,
     durationMin: 30,
     roleLabels: { host: '進行', guest: '解説' },
-    scenes: [{ id: newSceneId(), kind: 'title', title: '題', wipe: 'both', props: { title } }],
+    scenes: [],
+    board: {
+      nodes: [{ id: section, x: 0, y: 0, text: title, kind: 'section', sectionMode: 'eyecatch', pageFlow: [] }],
+      edges: [],
+      sections: [section],
+      flow: [],
+    },
   };
 }
 

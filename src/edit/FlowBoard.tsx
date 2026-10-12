@@ -46,7 +46,7 @@ import {
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent } from 'react';
 import { IconButton, Segmented, Swatches } from '../control/ui';
 import type { Board, BoardNode, BoardNodeKind, Lesson } from '../engine/types';
-import { addNode, childPosition, childrenOf, descendantsOf, GAP_Y, KIND_INFO, makesSlide, newNodeId, NODE_H, NODE_W, nodeKind, parentOf, removeNodes, tidy } from './board';
+import { addNode, childPosition, childrenOf, descendantsOf, GAP_Y, isDescendant, KIND_INFO, makesSlide, movePage, moveSection, newNodeId, NODE_H, NODE_W, nodeKind, parentOf, removeNodes, sectionOf, tidy, togglePage } from './board';
 import { kindOf, SLIDE_KINDS } from './schema';
 import './FlowBoard.css';
 
@@ -362,8 +362,25 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
     if (withSlides && !confirm(`流れに入っているカード（${withSlides}枚）を消すと、そのスライドも消えます。消しますか？`)) return;
     updateBoard((b) => removeNodes(b, ids));
   };
+  const [notice, setNotice] = useState('');
+  useEffect(() => {
+    if (!notice) return;
+    const t = window.setTimeout(() => setNotice(''), 3200);
+    return () => window.clearTimeout(t);
+  }, [notice]);
+  /** ページを、そのセクションの中の流れに入れる・外す */
   const toggleFlow = (id: string) => {
-    updateBoard((b) => (b.flow.includes(id) ? { ...b, flow: b.flow.filter((x) => x !== id) } : { ...b, flow: [...b.flow, id] }));
+    const n = board.nodes.find((x) => x.id === id);
+    if (!n) return;
+    if (nodeKind(n) === 'section') {
+      setNotice('セクションはいつも流れに入ります。順番は右の「流れ」の欄でドラッグして変えます');
+      return;
+    }
+    if (!sectionOf(board, id)) {
+      setNotice('このページはどのセクションにも入っていません。セクションの右の点からドラッグしてつなぐと、流れに入れられます');
+      return;
+    }
+    updateBoard((b) => togglePage(b, id));
   };
   const centerOn = (id: string) => {
     const n = board.nodes.find((x) => x.id === id);
@@ -477,6 +494,15 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
 
   const onConnect = (c: Connection) => {
     if (!c.source || !c.target || c.source === c.target) return;
+    const target = board.nodes.find((n) => n.id === c.target);
+    if (target && nodeKind(target) === 'section') {
+      setNotice('セクションは子にできません（セクションがいちばん上の親です）');
+      return;
+    }
+    if (isDescendant(board, c.source, c.target)) {
+      setNotice('その向きにつなぐと輪になるので、つなげません');
+      return;
+    }
     updateBoard((b) =>
       b.edges.some((e) => e.from === c.source && e.to === c.target) ? b : { ...b, edges: [...b.edges.filter((e) => e.to !== c.target), { id: `e-${c.source}-${c.target}`, from: c.source!, to: c.target! }] },
     );
@@ -569,6 +595,11 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
                 話す順にカードを押してください。押した順に番号が付き、スライドになります（もう一度押すと外れます）
               </Panel>
             )}
+            {notice && (
+              <Panel position="bottom-center" className="board__notice">
+                {notice}
+              </Panel>
+            )}
             {readOnly && (
               <Panel position="bottom-center" className={`board__readonly ${nudge ? 'is-nudged' : ''}`} key={`ro-${nudge}`}>
                 <span>これは見本です。直すときは写してから</span>
@@ -613,22 +644,34 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
                           const from = dragFrom.current;
                           dragFrom.current = null;
                           if (from === null || from === i) return;
+                          const moving = flowNodes[from];
+                          const target = n;
                           updateBoard((b) => {
-                            const flow = [...b.flow];
-                            const [x] = flow.splice(from, 1);
-                            flow.splice(i, 0, x);
-                            return { ...b, flow };
+                            const tSec = nodeKind(target) === 'section' ? target.id : sectionOf(b, target.id);
+                            if (!tSec) return b;
+                            if (nodeKind(moving) === 'section') {
+                              // セクションごと動かす: 落とした所のセクションの前（下へ動かすときは、その次のセクションの前）
+                              if (tSec === moving.id) return b;
+                              const secs = b.sections ?? [];
+                              const before = from < i ? secs[secs.indexOf(tSec) + 1] ?? null : tSec;
+                              return moveSection(b, moving.id, before);
+                            }
+                            // ページ: 落とした所の前へ（下へ動かすときは後ろへ）。セクションに落としたら、その流れの先頭へ
+                            if (nodeKind(target) === 'section') return movePage(b, moving.id, tSec, tSec);
+                            const pf = b.nodes.find((x) => x.id === tSec)?.pageFlow ?? [];
+                            const before = from < i ? pf[pf.indexOf(target.id) + 1] ?? null : target.id;
+                            return movePage(b, moving.id, tSec, before);
                           });
                         }}
                         onClick={() => centerOn(n.id)}
                         onDoubleClick={() => n.sceneId && makesSlide(n) && onOpenSlide(n.sceneId)}
-                        title="押すとカードへ。ダブルクリックでスライドを直す。ドラッグで順番を変える"
+                        title={isSection ? 'セクション。ドラッグでセクションごと順番を変える' : '押すとカードへ。ダブルクリックでスライドを直す。ドラッグで順番を変える（別のセクションへも動かせる）'}
                       >
                         <GripVertical size={13} className="board__grip" aria-hidden />
                         {no !== undefined ? <span className="board__num">{no}</span> : <span className="board__num board__num--none">§</span>}
                         {isSection ? <Bookmark size={14} aria-hidden /> : k ? <k.icon size={14} aria-hidden /> : <span />}
                         <span className="board__ftext">{n.text || '（無題）'}</span>
-                        {!readOnly && (
+                        {!readOnly && !isSection && (
                           <button
                             className="board__x"
                             title="流れから外す（スライドはしまっておく）"
@@ -660,7 +703,12 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
                   ]}
                   value={nodeKind(selected)}
                   onChange={(kind) =>
-                    updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (n.id === selected.id ? { ...n, kind, sectionMode: kind === 'section' ? n.sectionMode ?? 'none' : undefined } : n)) }))
+                    updateBoard((b) => ({
+                      ...b,
+                      // セクションにしたら、親から切り離していちばん上の親にする
+                      edges: kind === 'section' ? b.edges.filter((e) => e.to !== selected.id) : b.edges,
+                      nodes: b.nodes.map((n) => (n.id === selected.id ? { ...n, kind, sectionMode: kind === 'section' ? n.sectionMode ?? 'none' : undefined } : n)),
+                    }))
                   }
                 />
                 {nodeKind(selected) === 'section' ? (
@@ -696,21 +744,29 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
                 />
                 <div className="board__actions">
                   <IconButton icon={GitBranchPlus} label="子を足す" title="子（枝）を足す（Tab）" disabled={readOnly} onClick={() => addChild(selected.id)} />
-                  <IconButton
-                    icon={Route}
-                    label={flowIndex.has(selected.id) ? '流れから外す' : '流れに入れる'}
-                    title={flowIndex.has(selected.id) ? '流れから外す（スライドはしまっておく）' : '流れの最後に入れる'}
-                    active={flowIndex.has(selected.id)}
-                    disabled={readOnly}
-                    onClick={() => toggleFlow(selected.id)}
-                  />
+                  {nodeKind(selected) === 'page' && (
+                    <IconButton
+                      icon={Route}
+                      label={flowIndex.has(selected.id) ? '流れから外す' : '流れに入れる'}
+                      title={
+                        !sectionOf(board, selected.id)
+                          ? 'セクションにつないでから入れられます'
+                          : flowIndex.has(selected.id)
+                            ? '流れから外す（スライドはしまっておく）'
+                            : 'このセクションの流れの最後に入れる'
+                      }
+                      active={flowIndex.has(selected.id)}
+                      disabled={readOnly || !sectionOf(board, selected.id)}
+                      onClick={() => toggleFlow(selected.id)}
+                    />
+                  )}
                   {selected.sceneId && flowIndex.has(selected.id) && makesSlide(selected) && (
                     <IconButton icon={PanelRightOpen} label="スライドを直す" title="スライドの中身を直す" onClick={() => onOpenSlide(selected.sceneId!)} />
                   )}
                   <IconButton icon={Trash2} title="カードを消す（Delete）" variant="danger" disabled={readOnly} onClick={() => removeSelected([selected.id])} />
                 </div>
                 <p className="hint">
-                  ページを流れに入れると、カードの言葉が見出し、子のカードが本文の行のスライドができます。セクションは、流れの区切り（スライドにしない）か、アイキャッチ（区切りの題のスライド）を選べます。
+                  セクションが親、ページが子（ページも子ページを持てる）。ページを流れに入れると、そのセクションの流れの最後に入り、カードの言葉が見出し・子のカードが本文の行のスライドになります。セクションの流れが終わると、次のセクションへつながります。
                 </p>
               </section>
             )}

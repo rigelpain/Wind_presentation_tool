@@ -74,6 +74,8 @@ export interface BoardNode {
   collapsed?: boolean;
   /** 流れから外したときのスライド（流れに戻すと元に戻る） */
   stash?: Scene;
+  /** セクションのとき: このセクションの中の流れ（ページの順番。このセクションの子孫のページだけ） */
+  pageFlow?: string[];
 }
 
 /** 構成の枝（親 → 子） */
@@ -83,10 +85,16 @@ export interface BoardEdge {
   to: string;
 }
 
-/** 構成。流れ（flow）に並べたカードが、その順にスライドになる */
+/**
+ * 構成。セクションが親、ページが子（ページも子ページを持てる）の木。
+ * 流れ = セクションの順に「セクション → そのセクションの中の流れのページ」をつないだもの。その順にスライドになる
+ */
 export interface Board {
   nodes: BoardNode[];
   edges: BoardEdge[];
+  /** セクションの順番 */
+  sections?: string[];
+  /** 全体の流れ（セクションとページ）。sections と各セクションの pageFlow から作る（normalize） */
   flow: string[];
 }
 

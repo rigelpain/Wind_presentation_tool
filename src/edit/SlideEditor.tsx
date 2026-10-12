@@ -10,7 +10,7 @@ import { useShow } from '../engine/store';
 import type { BoardNode, Lesson, Scene, ShowSettings, ShowState, Transition, WipeMode } from '../engine/types';
 import { newSceneId } from '../lessons/userLessons';
 import { StageCanvas } from '../stage/StageCanvas';
-import { newNodeId, NODE_H } from './board';
+import { addNode, childPosition, movePage, moveSection, nodeKind, parentOf, removeNodes, sectionOf } from './board';
 import { FieldInput } from './Fields';
 import { kindOf, SLIDE_KINDS } from './schema';
 
@@ -78,15 +78,24 @@ export function SlideEditor({ lesson, setLesson, readOnly, sel, setSel }: { less
     );
   };
 
-  /** 新しいスライドを、いまのスライドの次に入れる（構成にもカードを作って流れに入れる） */
-  const insertAfter = (s: Scene) => {
+  /**
+   * 新しいスライドを、いまのスライドの次に入れる（構成にもページのカードを作る）。
+   * いまのスライドがページなら同じ親の子として、その次へ。アイキャッチ（セクション）なら、そのセクションの流れの先頭へ
+   */
+  const insertAfter = (sc: Scene) => {
     setLesson((l) => {
+      let b = l.board!;
       const cur = scene ? nodeOf(l, scene.id) : undefined;
-      const node: BoardNode = { id: newNodeId(), x: cur?.x ?? 0, y: (cur?.y ?? 0) + NODE_H + 60, text: s.title, kind: 'page', sceneId: s.id };
-      const flow = [...(l.board?.flow ?? [])];
-      const at = cur ? flow.indexOf(cur.id) + 1 : flow.length;
-      flow.splice(at, 0, node.id);
-      return { ...l, scenes: [...l.scenes, s], board: { nodes: [...(l.board?.nodes ?? []), node], edges: l.board?.edges ?? [], flow } };
+      const secId = cur ? (nodeKind(cur) === 'section' ? cur.id : sectionOf(b, cur.id)) : b.sections?.[b.sections.length - 1];
+      if (!secId) return { ...l, scenes: [...l.scenes, sc] }; // セクションがなければ、そろえるときに最後のセクションへ入る
+      const parentId = cur && nodeKind(cur) === 'page' ? (parentOf(b, cur.id)?.id ?? secId) : secId;
+      const parent = b.nodes.find((n) => n.id === parentId)!;
+      const r = addNode(b, { ...childPosition(b, parent), text: sc.title, kind: 'page', sceneId: sc.id }, parentId);
+      b = r.board;
+      const pf = b.nodes.find((n) => n.id === secId)?.pageFlow ?? [];
+      const before = cur && nodeKind(cur) === 'page' ? pf[pf.indexOf(cur.id) + 1] ?? null : secId;
+      b = movePage(b, r.id, secId, before);
+      return { ...l, scenes: [...l.scenes, sc], board: b };
     });
     setSel(index + 1);
     setStep(99);
@@ -103,22 +112,42 @@ export function SlideEditor({ lesson, setLesson, readOnly, sel, setSel }: { less
   };
   const remove = () => {
     if (!scene || readOnly || lesson.scenes.length <= 1) return;
-    if (!confirm(`「${scene.title}」を消します。`)) return;
+    const n = nodeOf(lesson, scene.id);
+    const what = n && nodeKind(n) === 'section' ? `セクション「${scene.title}」（中のページはセクションに残ります）` : `「${scene.title}」`;
+    if (!confirm(`${what}を消します。`)) return;
     setLesson((l) => {
-      const n = nodeOf(l, scene.id);
-      if (!n || !l.board) return { ...l, scenes: l.scenes.filter((s) => s.id !== scene.id) };
-      return { ...l, board: { nodes: l.board.nodes.filter((x) => x.id !== n.id), edges: l.board.edges.filter((e) => e.from !== n.id && e.to !== n.id), flow: l.board.flow.filter((id) => id !== n.id) } };
+      const node = nodeOf(l, scene.id);
+      if (!node || !l.board) return { ...l, scenes: l.scenes.filter((s) => s.id !== scene.id) };
+      // セクションのアイキャッチを消すときは、セクションは残して「スライドにしない」にする
+      if (nodeKind(node) === 'section') return { ...l, board: { ...l.board, nodes: l.board.nodes.map((x) => (x.id === node.id ? { ...x, sectionMode: 'none' } : x)) } };
+      return { ...l, board: removeNodes(l.board, [node.id]) };
     });
     setSel(Math.max(0, index - 1));
   };
+  /** スライドの順を変える。ページはセクションの流れの中で（またぐときは、そのセクションの子へつなぎ直す）、アイキャッチはセクションごと動かす */
   const move = (from: number, to: number) => {
     if (readOnly || to < 0 || to >= lesson.scenes.length || from === to) return;
     setLesson((l) => {
-      if (!l.board) return l;
-      const flow = [...l.board.flow];
-      const [x] = flow.splice(from, 1);
-      flow.splice(to, 0, x);
-      return { ...l, board: { ...l.board, flow } };
+      const b = l.board;
+      if (!b) return l;
+      const a = nodeOf(l, l.scenes[from].id);
+      const t = nodeOf(l, l.scenes[to].id);
+      if (!a || !t) return l;
+      const tSec = nodeKind(t) === 'section' ? t.id : sectionOf(b, t.id);
+      if (!tSec) return l;
+      const secs = b.sections ?? [];
+      if (nodeKind(a) === 'section') {
+        if (tSec === a.id) return l;
+        return { ...l, board: moveSection(b, a.id, from < to ? secs[secs.indexOf(tSec) + 1] ?? null : tSec) };
+      }
+      if (nodeKind(t) === 'section') {
+        // アイキャッチの上へ動かす: 下へなら、そのセクションの先頭。上へなら、ひとつ前のセクションの最後
+        if (from < to) return { ...l, board: movePage(b, a.id, tSec, tSec) };
+        const prev = secs[secs.indexOf(tSec) - 1];
+        return prev ? { ...l, board: movePage(b, a.id, prev, null) } : l;
+      }
+      const pf = b.nodes.find((x) => x.id === tSec)?.pageFlow ?? [];
+      return { ...l, board: movePage(b, a.id, tSec, from < to ? pf[pf.indexOf(t.id) + 1] ?? null : t.id) };
     });
     setSel(to);
   };
