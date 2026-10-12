@@ -113,14 +113,17 @@ function migrate(board: Board): Board {
   const hasParent = new Set(edges.map((e) => e.to));
   let sections = board.flow.filter((id) => nodes.find((n) => n.id === id)?.kind === 'section' && !hasParent.has(id));
   const flowPages = board.flow.filter((id) => nodes.find((n) => n.id === id)?.kind === 'page');
-  // 流れにページがあってセクションがないときは、まとめるセクションを作る
-  if (flowPages.length && sections.length === 0) {
-    const sec: BoardNode = { id: newNodeId(), x: Math.min(...nodes.map((n) => n.x)) - NODE_W - GAP_X, y: Math.min(...nodes.map((n) => n.y)), text: '授業の流れ', kind: 'section', sectionMode: 'none' };
+  // 流れの最初のセクションより前にページがあるとき（セクションがないときも）は、それをまとめる「はじめ」のセクションを先頭に作る
+  const firstSection = board.flow.findIndex((id) => sections.includes(id));
+  const leading = (firstSection < 0 ? board.flow : board.flow.slice(0, firstSection)).some((id) => flowPages.includes(id));
+  let cur: string | undefined;
+  if (leading) {
+    const sec: BoardNode = { id: newNodeId(), x: Math.min(...nodes.map((n) => n.x)) - NODE_W - GAP_X, y: Math.min(...nodes.map((n) => n.y)), text: sections.length ? 'はじめ' : '授業の流れ', kind: 'section', sectionMode: 'none' };
     nodes = [sec, ...nodes];
-    sections = [sec.id];
+    sections = [sec.id, ...sections];
+    cur = sec.id;
   }
   const flows = new Map<string, string[]>(sections.map((id) => [id, []]));
-  let cur = sections[0];
   for (const id of board.flow) {
     if (flows.has(id)) {
       cur = id;
