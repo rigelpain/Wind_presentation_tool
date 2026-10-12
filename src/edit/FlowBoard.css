@@ -1,0 +1,347 @@
+/* 編集画面の「構成」 */
+.board {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  outline: none;
+}
+.board__canvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #171614;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.board .react-flow {
+  --xy-background-color: #171614;
+}
+.board.is-flowmode .board__canvas {
+  box-shadow: inset 0 0 0 3px rgba(232, 69, 44, 0.65);
+}
+
+/* カード */
+.card {
+  position: relative;
+  min-height: 56px;
+  padding: 10px 14px 10px 16px;
+  border-radius: 12px;
+  background: #2a2824;
+  color: #f1ede4;
+  border: 2px solid #3d3a34;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  transition: border-color 120ms, box-shadow 120ms, transform 120ms;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 10px;
+  bottom: 10px;
+  width: 5px;
+  border-radius: 0 4px 4px 0;
+  background: var(--card);
+}
+.card--seed {
+  background: #34302a;
+  border-color: color-mix(in srgb, var(--card) 55%, #3d3a34);
+}
+.card--seed .card__text,
+.card--seed .card__input {
+  font-size: 16px;
+  font-weight: 800;
+}
+.card--note {
+  background: #23251f;
+  border-style: dashed;
+}
+.card--question .card__text::before {
+  content: '？ ';
+  color: var(--card);
+  font-weight: 900;
+}
+.card.is-selected {
+  border-color: #f1ede4;
+  box-shadow: 0 0 0 3px rgba(241, 237, 228, 0.18), 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.card.is-flow {
+  border-color: #e8452c;
+}
+.card.is-flowmode {
+  cursor: pointer;
+}
+.card.is-flowmode:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 3px rgba(232, 69, 44, 0.35);
+}
+.card__text {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  width: 100%;
+}
+.card__text.is-empty {
+  color: #6b675e;
+}
+.card__input {
+  width: 100%;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 0;
+}
+.card__num {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 13px;
+  background: #e8452c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+.card__slide {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  color: #fdba74;
+  display: inline-flex;
+}
+.control .card__fold {
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1b1a18;
+  border: 1px solid #46433b;
+  z-index: 2;
+}
+.control .card__fold.is-folded {
+  background: #46433b;
+}
+.card__h {
+  width: 10px !important;
+  height: 10px !important;
+  border: 2px solid #171614 !important;
+  background: #8a8577 !important;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.card:hover .card__h--b,
+.card.is-selected .card__h--b {
+  opacity: 1;
+}
+.card__h--f {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+/* 枝と流れ */
+.board .edge-branch path {
+  stroke: #6b675e;
+  stroke-width: 2.5;
+}
+.board .edge-flow path {
+  stroke: #e8452c;
+  stroke-width: 4;
+}
+.board .react-flow__edge.selected.edge-branch path {
+  stroke: #f1ede4;
+}
+
+/* 道具 */
+.board__tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(27, 26, 24, 0.92);
+  border: 1px solid #3d3a34;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.board__sep {
+  width: 1px;
+  align-self: stretch;
+  background: #3d3a34;
+  margin: 2px 2px;
+}
+.board__flowhint,
+.board__empty {
+  background: rgba(27, 26, 24, 0.92);
+  border: 1px solid #e8452c;
+  color: #f1ede4;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.board__empty {
+  border-color: #46433b;
+  margin-top: 80px;
+  font-size: 15px;
+}
+.board__minimap {
+  background: #1b1a18 !important;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* 右の欄 */
+.board__side {
+  width: 300px;
+  margin-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+.board__side section {
+  background: #26241f;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.board__side header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.board__side h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  flex: 1;
+}
+.control .board__close {
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  display: inline-flex;
+  color: #a9a395;
+}
+.board__flow ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.board__flow li {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 4px;
+  border-radius: 8px;
+  background: #2f2c27;
+  cursor: pointer;
+  font-size: 13px;
+  min-height: 34px;
+}
+.board__flow li:hover {
+  background: #36322c;
+}
+.board__flow li.is-on {
+  box-shadow: inset 0 0 0 2px #f1ede4;
+}
+.board__grip {
+  color: #6b675e;
+  cursor: grab;
+}
+.board__num {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #e8452c;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.board__ftext {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.control .board__x {
+  border: 0;
+  background: transparent;
+  padding: 4px;
+  display: inline-flex;
+  color: #8a8577;
+  min-width: 26px;
+  min-height: 26px;
+  justify-content: center;
+}
+.control .board__x:hover {
+  color: #fca5a5;
+}
+.board__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.board__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.board__keys summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #a9a395;
+}
+.board__keys ul {
+  margin: 6px 0 0;
+  padding-left: 1.1em;
+  font-size: 12px;
+  color: #cfc8b8;
+  line-height: 1.7;
+}
+
+/* React Flow の部品を暗い地に */
+.board .react-flow__controls button {
+  background: #2a2824;
+  border-color: #3d3a34;
+  color: #f1ede4;
+}
+.board .react-flow__selection {
+  background: rgba(232, 69, 44, 0.08);
+  border: 1px dashed #e8452c;
+}

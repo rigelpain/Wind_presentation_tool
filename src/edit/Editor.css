@@ -13,14 +13,14 @@
   flex-wrap: wrap;
 }
 .control .ed-lesson {
-  max-width: 220px;
+  max-width: 170px;
   min-height: 32px;
 }
 .control .ed-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
-  min-width: 200px;
-  flex: 0 1 360px;
+  min-width: 120px;
+  flex: 0 1 280px;
   min-height: 32px;
 }
 .ed-min {
@@ -37,13 +37,51 @@
 .ed-top__spacer {
   flex: 1;
 }
-.ed-main {
+.ed-body {
   flex: 1;
   min-height: 0;
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ed-body > .board,
+.ed-body > .ed-main,
+.ed-body > .pdf {
+  flex: 1;
+  min-height: 0;
+}
+.ed-tabs {
+  display: inline-flex;
+  gap: 2px;
+  background: #1b1a18;
+  border-radius: 10px;
+  padding: 3px;
+  margin-left: 8px;
+}
+.control .ed-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #cfc8b8;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.control .ed-tabs button.is-on {
+  background: #f1ede4;
+  color: #1b1a18;
+}
+.ed-readonly--top {
+  margin: 0;
+}
+.ed-main {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 360px;
   gap: 14px;
-  padding: 14px 16px;
 }
 .ed-list {
   display: flex;

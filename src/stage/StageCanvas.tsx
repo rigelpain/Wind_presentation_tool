@@ -66,7 +66,7 @@ interface Props {
   state: ShowState;
   lesson: Lesson;
   /** 縮小表示。キー・カメラ・音は持たず、ワイプは仮の箱で出す。edit は編集画面（切り替えの演出なし、state の場面と段階をそのまま描く） */
-  preview?: 'now' | 'next' | 'edit';
+  preview?: 'now' | 'next' | 'edit' | 'print';
   children?: ReactNode;
 }
 
@@ -86,7 +86,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
     if (to === from) return;
     prevIndex.current = to;
     const t = lesson.scenes[to]?.transition ?? 'cut';
-    if (preview === 'next' || preview === 'edit' || to < from || t === 'cut') {
+    if (preview === 'next' || preview === 'edit' || preview === 'print' || to < from || t === 'cut') {
       setPhase({ kind: 'none' });
       setShown(to);
       return;
@@ -106,12 +106,17 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
     };
   }, [state.sceneIndex, lesson, ms, preview]);
 
-  const index = preview === 'next' ? state.sceneIndex + 1 : preview === 'edit' ? state.sceneIndex : shown;
+  const fixed = preview === 'edit' || preview === 'print';
+  const index = preview === 'next' ? state.sceneIndex + 1 : fixed ? state.sceneIndex : shown;
   const scene = lesson.scenes[index];
-  const live = preview === 'edit' || (preview !== 'next' && shown === state.sceneIndex);
+  const live = fixed || (preview !== 'next' && shown === state.sceneIndex);
   const step = preview === 'next' ? 0 : live ? state.step : 99;
   const wipeState: ShowState =
-    (preview === 'next' || preview === 'edit') && scene?.wipe ? { ...state, wipe: { ...state.wipe, mode: scene.wipe } } : state;
+    preview === 'print'
+      ? { ...state, wipe: { ...state.wipe, mode: 'hidden' } } // 紙にはワイプを出さないので、中身を画面いっぱいに置く
+      : (preview === 'next' || preview === 'edit') && scene?.wipe
+        ? { ...state, wipe: { ...state.wipe, mode: scene.wipe } }
+        : state;
   const prev = phase.kind === 'fade' || phase.kind === 'slide' ? lesson.scenes[phase.from] : undefined;
   const style = { '--t': `${ms}ms` } as CSSProperties;
 
@@ -130,10 +135,10 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
         ) : (
           <div className="stage__scene stage__end">{preview === 'next' ? 'おわり' : ''}</div>
         )}
-        <WipeLayer state={wipeState} lesson={lesson} placeholder={preview ? 'ワイプ' : undefined} />
+        {preview !== 'print' && <WipeLayer state={wipeState} lesson={lesson} placeholder={preview ? 'ワイプ' : undefined} />}
         {(() => {
           // 次の予告: 予告を出す場面の最後の段階で、次の場面を知らせる
-          const nextScene = preview !== 'next' && live ? lesson.scenes[index + 1] : undefined;
+          const nextScene = preview !== 'next' && preview !== 'print' && live ? lesson.scenes[index + 1] : undefined;
           const showTeaser = !!(scene?.teaser && nextScene && step >= stepsOf(scene).length - 1);
           const showLoops = state.settings.showLoops && state.openLoops.length > 0 && !scene?.props?.hideLoops;
           if (!showTeaser && !showLoops) return null;
@@ -156,7 +161,7 @@ export function StageCanvas({ state, lesson, preview, children }: Props) {
           );
         })()}
         {!preview && <StageClock state={state} lesson={lesson} />}
-        {preview !== 'next' && preview !== 'edit' && <CaptionsLayer state={state} />}
+        {!preview || preview === 'now' ? <CaptionsLayer state={state} /> : null}
         {phase.kind === 'black' && <div className="dip" key={`dip-${phase.at}`} />}
         {state.blackout && preview !== 'next' && <div className="blackout" />}
       </div>

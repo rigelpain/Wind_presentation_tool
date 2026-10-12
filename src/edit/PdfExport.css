@@ -1,0 +1,171 @@
+/* 編集画面の「PDF」 */
+.pdf {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+.pdf__opts {
+  background: #26241f;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: start;
+}
+.pdf__opts h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.pdf__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.pdf__pages {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 4px;
+  min-height: 0;
+}
+.pdf-thumb {
+  position: relative;
+  flex: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+.pdf-page {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  background: #fff;
+  color: #141414;
+  box-sizing: border-box;
+  padding: 40px 44px;
+  font-family: var(--font);
+}
+.pdf-grid {
+  display: grid;
+  gap: 26px 30px;
+  height: 100%;
+  align-content: center;
+}
+.pdf-grid--1 {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+.pdf-grid--1 .pdf-slide {
+  width: 88%;
+}
+.pdf-grid--1.has-notes .pdf-slide {
+  width: 70%;
+}
+.pdf-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+.pdf-grid--4 {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.pdf-grid--6 {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+}
+.pdf-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.pdf-slide__box {
+  position: relative;
+  width: 100%;
+  border: 1px solid #ccc;
+  overflow: hidden;
+}
+.pdf-slide__box .stage-viewport {
+  background: #fff;
+}
+.pdf-slide__cap {
+  font-size: 12px;
+  color: #444;
+}
+.pdf-slide__notes {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #222;
+  white-space: pre-wrap;
+  border-top: 1px solid #ddd;
+  padding-top: 6px;
+}
+.pdf-cover {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 60px;
+}
+.pdf-cover__title {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.pdf-cover__meta {
+  margin-top: 18px;
+  font-size: 16px;
+  color: #666;
+}
+
+/* 印刷: ページだけを、実寸で出す */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  html,
+  body,
+  #root {
+    background: #fff !important;
+    height: auto !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .pdf__pages,
+  .pdf__pages * {
+    visibility: visible;
+  }
+  .editor,
+  .ed-body,
+  .pdf {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .pdf__pages {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: block;
+    overflow: visible;
+    padding: 0;
+  }
+  .pdf-thumb {
+    width: 297mm !important;
+    height: 210mm !important;
+    box-shadow: none;
+    break-after: page;
+    overflow: hidden;
+  }
+  .pdf-page {
+    transform: none !important;
+    width: 297mm !important;
+    height: 210mm !important;
+  }
+}

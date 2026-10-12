@@ -50,6 +50,40 @@ export interface Scene {
   props?: Record<string, unknown>;
 }
 
+/** 構成のカードの種類 */
+export type BoardNodeKind = 'seed' | 'idea' | 'question' | 'note';
+
+/** 構成（編集画面）のカード */
+export interface BoardNode {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  kind: BoardNodeKind;
+  /** 枠の色（#RRGGBB）。省くと種類の色 */
+  color?: string;
+  /** このカードのスライド */
+  sceneId?: string;
+  /** 子のカードをたたんでいる */
+  collapsed?: boolean;
+  /** 流れから外したときのスライド（流れに戻すと元に戻る） */
+  stash?: Scene;
+}
+
+/** 構成の枝（親 → 子） */
+export interface BoardEdge {
+  id: string;
+  from: string;
+  to: string;
+}
+
+/** 構成。流れ（flow）に並べたカードが、その順にスライドになる */
+export interface Board {
+  nodes: BoardNode[];
+  edges: BoardEdge[];
+  flow: string[];
+}
+
 export interface Lesson {
   id: string;
   title: string;
@@ -58,6 +92,8 @@ export interface Lesson {
   /** ワイプの役割名。実名は出さない */
   roleLabels: Record<Role, string>;
   scenes: Scene[];
+  /** 編集画面の構成（話のタネ・枝・流れ）。省くと、スライドから作る */
+  board?: Board;
 }
 
 /** 注意を引く演出の種類。種明かしの一覧に回数つきで並ぶ。 */
