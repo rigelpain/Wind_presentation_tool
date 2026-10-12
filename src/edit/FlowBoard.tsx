@@ -21,12 +21,18 @@ import {
   ReactFlowProvider,
   useNodesState,
   useReactFlow,
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
+  getStraightPath,
   type Connection,
   type Edge,
+  type EdgeProps,
   type Node,
   type NodeProps,
 } from '@xyflow/react';
 import {
+  Minus,
   Bookmark,
   ChevronRight,
   Copy,
@@ -69,6 +75,13 @@ interface Ctx {
   cancelEdit: () => void;
   startEdit: (id: string) => void;
   toggleCollapse: (id: string) => void;
+  /** 枝を切る */
+  cutBranch: (edgeId: string) => void;
+  /** 流れの矢印 from → to を外す（矢印の先のページを流れから外す） */
+  unlinkFlow: (from: string, to: string) => void;
+  /** 流れの矢印 from → to の先を、別のカード to2 につなぎ替える（to2 を from のすぐ次にする） */
+  relinkFlow: (from: string, to2: string) => void;
+  readOnly: boolean;
 }
 const BoardCtx = createContext<Ctx | null>(null);
 
@@ -186,6 +199,116 @@ function Card({ id, data, selected }: NodeProps<Node<CardData>>) {
 
 const nodeTypes = { card: Card };
 
+/**
+ * 流れの矢印。押すと選ばれ、まん中に「×」（流れから外す）、先に「つまみ」（ドラッグで別のカードへつなぎ替える）が出る
+ */
+function FlowEdge({ id, source, target, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected, markerEnd, style }: EdgeProps) {
+  const ctx = useContext(BoardCtx)!;
+  const rf = useReactFlow();
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const [path, labelX, labelY] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+  const [dragPath] = drag ? getStraightPath({ sourceX, sourceY, targetX: drag.x, targetY: drag.y }) : [''];
+
+  const startDrag = (e: React.PointerEvent) => {
+    if (ctx.readOnly) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const move = (ev: PointerEvent) => setDrag(rf.screenToFlowPosition({ x: ev.clientX, y: ev.clientY }));
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      setDrag(null);
+      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('.react-flow__node') as HTMLElement | null;
+      const to2 = el?.dataset.id;
+      if (to2 && to2 !== source && to2 !== target) ctx.relinkFlow(source, to2);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    move(e.nativeEvent);
+  };
+
+  return (
+    <>
+      <BaseEdge id={id} path={path} markerEnd={markerEnd} style={style} className={selected ? 'is-selected' : ''} interactionWidth={22} />
+      {drag && <path d={dragPath} className="edge-flow__drag" />}
+      {selected && !ctx.readOnly && (
+        <EdgeLabelRenderer>
+          <button
+            className="edge-flow__x nodrag nopan"
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            title="この矢印を外す（矢印の先のページを流れから外す。スライドはしまっておく）"
+            onClick={(e) => {
+              e.stopPropagation();
+              ctx.unlinkFlow(source, target);
+            }}
+          >
+            <X size={14} />
+          </button>
+          <span
+            className="edge-flow__grip nodrag nopan"
+            style={{ transform: `translate(-50%, -50%) translate(${targetX}px, ${targetY}px)` }}
+            title="ドラッグして、別のカードへつなぎ替える（そのカードがこの矢印の元のすぐ次になる）"
+            onPointerDown={startDrag}
+          />
+        </EdgeLabelRenderer>
+      )}
+    </>
+  );
+}
+
+/** 枝（親 → 子）。マウスを乗せると「−」が出て、線を押すと切れる */
+function BranchEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, selected }: EdgeProps) {
+  const ctx = useContext(BoardCtx)!;
+  const [hover, setHover] = useState(false);
+  const [path, labelX, labelY] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
+  const cut = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!ctx.readOnly) ctx.cutBranch(id);
+  };
+  return (
+    <>
+      <path d={path} className={`edge-branch__line ${hover || selected ? 'is-hover' : ''}`} />
+      {!ctx.readOnly && (
+        <path
+          d={path}
+          className="edge-branch__hit"
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+          onClick={cut}
+        >
+          <title>押すと枝を切る（⌘Z で戻せる）</title>
+        </path>
+      )}
+      {hover && !ctx.readOnly && (
+        <EdgeLabelRenderer>
+          <button
+            className="edge-branch__minus nodrag nopan"
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            onClick={cut}
+            title="枝を切る"
+          >
+            <Minus size={14} />
+          </button>
+        </EdgeLabelRenderer>
+      )}
+    </>
+  );
+}
+
+const edgeTypes = { flow: FlowEdge, branch: BranchEdge };
+
+/** カードの上下左右のまん中の点 */
+function sidePoints(n: BoardNode, h: number): Record<string, { x: number; y: number }> {
+  return {
+    t: { x: n.x + NODE_W / 2, y: n.y },
+    b: { x: n.x + NODE_W / 2, y: n.y + h },
+    l: { x: n.x, y: n.y + h / 2 },
+    r: { x: n.x + NODE_W, y: n.y + h / 2 },
+  };
+}
+
 /** 流れの矢印をつなぐ辺（上下左右） */
 const FLOW_SIDES: [string, Position][] = [
   ['t', Position.Top],
@@ -194,12 +317,21 @@ const FLOW_SIDES: [string, Position][] = [
   ['r', Position.Right],
 ];
 
-/** 流れの矢印は、次のカードのある向きの辺から出して、向かい合う辺へ入れる */
-function flowSides(a: BoardNode, b: BoardNode): [string, string] {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  if (Math.abs(dy) * 2.2 >= Math.abs(dx)) return dy >= 0 ? ['b', 't'] : ['t', 'b'];
-  return dx >= 0 ? ['r', 'l'] : ['l', 'r'];
+/** 流れの矢印は、2枚のカードの上下左右のまん中の点のうち、いちばん近い組み合わせでつなぐ（カードを動かすとつく場所も変わる） */
+function flowSides(a: BoardNode, b: BoardNode, ha: number, hb: number): [string, string] {
+  const pa = sidePoints(a, ha);
+  const pb = sidePoints(b, hb);
+  let best: [string, string] = ['b', 't'];
+  let min = Infinity;
+  for (const sa of Object.keys(pa))
+    for (const sb of Object.keys(pb)) {
+      const d = Math.hypot(pa[sa].x - pb[sb].x, pa[sa].y - pb[sb].y);
+      if (d < min - 0.5) {
+        min = d;
+        best = [sa, sb];
+      }
+    }
+  return best;
 }
 
 function hiddenSet(board: Board): Set<string> {
@@ -270,6 +402,9 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
 
   const select = (id: string) => setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === id })));
 
+  const [edgeSel, setEdgeSel] = useState<string | null>(null);
+  // カードの実際の高さ（つく場所を決めるのに使う）。動かしている最中の位置も使う
+  const live = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const edges: Edge[] = useMemo(() => {
     const branch: Edge[] = board.edges.map((e) => ({
       id: e.id,
@@ -277,27 +412,38 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
       target: e.to,
       sourceHandle: 'b',
       targetHandle: 'b',
+      type: 'branch',
       className: 'edge-branch',
+      selected: edgeSel === e.id,
+      interactionWidth: 18,
       hidden: hidden.has(e.to) || hidden.has(e.from),
     }));
-    const byId = new Map(board.nodes.map((n) => [n.id, n]));
+    const at = (id: string): BoardNode => {
+      const n = board.nodes.find((x) => x.id === id)!;
+      const r = live.get(id);
+      return r ? { ...n, x: r.position.x, y: r.position.y } : n;
+    };
+    const heightOf = (id: string) => live.get(id)?.measured?.height ?? NODE_H;
     const flowEdges: Edge[] = board.flow.slice(1).map((id, i) => {
-      const [from, to] = flowSides(byId.get(board.flow[i])!, byId.get(id)!);
+      const prev = board.flow[i];
+      const [from, to] = flowSides(at(prev), at(id), heightOf(prev), heightOf(id));
+      const eid = `flow-${prev}-${id}`;
       return {
-      id: `flow-${board.flow[i]}-${id}`,
-      source: board.flow[i],
-      target: id,
-      sourceHandle: `fs${from}`,
-      targetHandle: `ft${to}`,
-      className: 'edge-flow',
-      animated: true,
-      selectable: false,
-      markerEnd: { type: MarkerType.ArrowClosed, color: '#E8452C', width: 18, height: 18 },
-      hidden: hidden.has(id) || hidden.has(board.flow[i]),
+        id: eid,
+        type: 'flow',
+        source: prev,
+        target: id,
+        sourceHandle: `fs${from}`,
+        targetHandle: `ft${to}`,
+        className: 'edge-flow',
+        animated: edgeSel !== eid,
+        selected: edgeSel === eid,
+        markerEnd: { type: MarkerType.ArrowClosed, color: '#E8452C', width: 18, height: 18 },
+        hidden: hidden.has(id) || hidden.has(prev),
       };
     });
     return [...branch, ...flowEdges];
-  }, [board, hidden]);
+  }, [board, hidden, live, edgeSel]);
 
   const updateBoard = (fn: (b: Board) => Board, opts?: { merge?: boolean }) => {
     if (readOnly) return;
@@ -401,6 +547,43 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
     },
     startEdit: (id) => !readOnly && setEditingId(id),
     toggleCollapse: (id) => updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (n.id === id ? { ...n, collapsed: !n.collapsed } : n)) })),
+    cutBranch: (edgeId) => {
+      setEdgeSel(null);
+      updateBoard((b) => ({ ...b, edges: b.edges.filter((x) => x.id !== edgeId) }));
+    },
+    unlinkFlow: (from, to) => {
+      setEdgeSel(null);
+      // 矢印の先がページならそれを、先がセクションなら元のページを、流れから外す
+      const t = board.nodes.find((n) => n.id === to);
+      const f = board.nodes.find((n) => n.id === from);
+      const page = t && nodeKind(t) === 'page' ? t : f && nodeKind(f) === 'page' ? f : undefined;
+      if (!page) {
+        setNotice('セクションどうしの矢印は外せません。セクションの順番は右の「流れ」の欄で変えます');
+        return;
+      }
+      updateBoard((b) => togglePage(b, page.id));
+    },
+    relinkFlow: (from, to2) => {
+      setEdgeSel(null);
+      const f = board.nodes.find((n) => n.id === from);
+      const z = board.nodes.find((n) => n.id === to2);
+      if (!f || !z) return;
+      updateBoard((b) => {
+        const fSec = nodeKind(f) === 'section' ? f.id : sectionOf(b, f.id);
+        if (!fSec) return b;
+        if (nodeKind(z) === 'section') {
+          // セクションへつないだら、そのセクションを元のセクションのすぐ次へ
+          if (z.id === fSec) return b;
+          const secs = (b.sections ?? []).filter((x) => x !== z.id);
+          return moveSection(b, z.id, secs[secs.indexOf(fSec) + 1] ?? null);
+        }
+        // ページへつないだら、そのページを元のカードのすぐ次へ（別のセクションなら、このセクションへ移す）
+        const pf = (b.nodes.find((x) => x.id === fSec)?.pageFlow ?? []).filter((x) => x !== z.id);
+        const before = nodeKind(f) === 'section' ? pf[0] ?? null : pf[pf.indexOf(f.id) + 1] ?? null;
+        return movePage(b, z.id, fSec, before);
+      });
+    },
+    readOnly,
   };
 
   /** 見える範囲の真ん中にセクションを置く */
@@ -423,6 +606,17 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
       // 見本は直せないので、写して編集するよう知らせる
       e.preventDefault();
       setNudge((x) => x + 1);
+      return;
+    }
+    // 矢印・枝を選んでいるとき: Delete で外す
+    if (edgeSel && (e.key === 'Delete' || e.key === 'Backspace')) {
+      e.preventDefault();
+      const fe = edges.find((x) => x.id === edgeSel);
+      if (fe?.type === 'flow') ctx.unlinkFlow(fe.source, fe.target);
+      else {
+        updateBoard((b) => ({ ...b, edges: b.edges.filter((x) => x.id !== edgeSel) }));
+        setEdgeSel(null);
+      }
       return;
     }
     const id = selected?.id;
@@ -510,7 +704,69 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
 
   const empty = board.nodes.length === 0;
   const flowNodes = board.flow.map((id) => board.nodes.find((n) => n.id === id)).filter(Boolean) as BoardNode[];
-  const dragFrom = useRef<number | null>(null);
+  /** 流れの欄で、from 番目を i 番目の所へ動かす（セクションはセクションごと、ページは別のセクションへも） */
+  const moveFlowItem = (from: number, i: number) => {
+    if (from === i) return;
+    const moving = flowNodes[from];
+    const target = flowNodes[i];
+    if (!moving || !target) return;
+    updateBoard((b) => {
+      const tSec = nodeKind(target) === 'section' ? target.id : sectionOf(b, target.id);
+      if (!tSec) return b;
+      if (nodeKind(moving) === 'section') {
+        // セクションごと動かす: 落とした所のセクションの前（下へ動かすときは、その次のセクションの前）
+        if (tSec === moving.id) return b;
+        const secs = b.sections ?? [];
+        const before = from < i ? secs[secs.indexOf(tSec) + 1] ?? null : tSec;
+        return moveSection(b, moving.id, before);
+      }
+      // ページ: 落とした所の前へ（下へ動かすときは後ろへ）。セクションに落としたら、その流れの先頭へ
+      if (nodeKind(target) === 'section') {
+        if (from < i) return movePage(b, moving.id, tSec, tSec);
+        const secs = b.sections ?? [];
+        const prev = secs[secs.indexOf(tSec) - 1];
+        return prev ? movePage(b, moving.id, prev, null) : movePage(b, moving.id, tSec, tSec);
+      }
+      const pf = (b.nodes.find((x) => x.id === tSec)?.pageFlow ?? []).filter((x) => x !== moving.id);
+      const before = from < i ? pf[pf.indexOf(target.id) + 1] ?? null : target.id;
+      return movePage(b, moving.id, tSec, before);
+    });
+  };
+  // 流れの欄のドラッグ（ポインターで追う。トラックパッドでも確実に動くように）
+  const rowEls = useRef<(HTMLLIElement | null)[]>([]);
+  const suppressClick = useRef(false);
+  const [rowDrag, setRowDrag] = useState<{ from: number; over: number; moved: boolean } | null>(null);
+  const startRowDrag = (e: React.PointerEvent, from: number) => {
+    if (readOnly || e.button !== 0 || (e.target as HTMLElement).closest('button')) return;
+    const startY = e.clientY;
+    let state = { from, over: from, moved: false };
+    const move = (ev: PointerEvent) => {
+      if (!state.moved && Math.abs(ev.clientY - startY) < 5) return;
+      let over = state.over;
+      rowEls.current.forEach((el, k) => {
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        if (ev.clientY >= r.top && ev.clientY < r.bottom) over = k;
+      });
+      const first = rowEls.current[0]?.getBoundingClientRect();
+      const last = rowEls.current[flowNodes.length - 1]?.getBoundingClientRect();
+      if (first && ev.clientY < first.top) over = 0;
+      if (last && ev.clientY >= last.bottom) over = flowNodes.length - 1;
+      state = { from, over, moved: true };
+      setRowDrag(state);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      if (state.moved) {
+        suppressClick.current = true;
+        moveFlowItem(state.from, state.over);
+      }
+      setRowDrag(null);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
 
   return (
     <BoardCtx.Provider value={ctx}>
@@ -540,9 +796,20 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
               if (flowMode && !readOnly) toggleFlow(n.id);
             }}
             onConnect={onConnect}
-            onEdgeDoubleClick={(_, edge) => {
-              if (!edge.id.startsWith('flow-')) updateBoard((b) => ({ ...b, edges: b.edges.filter((e) => e.id !== edge.id) }));
+            onConnectEnd={(event, conn) => {
+              // カードの点からドラッグして、何もない所で離したら、そこに子のページを作る
+              if (readOnly || conn.isValid || conn.toNode || !conn.fromNode) return;
+              const pt = 'changedTouches' in event ? event.changedTouches[0] : (event as MouseEvent);
+              const p = rf.screenToFlowPosition({ x: pt.clientX, y: pt.clientY });
+              const parentId = conn.fromNode.id;
+              const id = newNodeId();
+              updateBoard((b) => addNode(b, { x: p.x - 12, y: p.y - NODE_H / 2, kind: 'page' }, parentId, id).board);
+              startNew(id);
             }}
+            edgeTypes={edgeTypes}
+            onEdgeClick={(_, edge) => setEdgeSel(edge.id)}
+            onPaneClick={() => setEdgeSel(null)}
+            onNodeDragStart={() => setEdgeSel(null)}
             zoomOnDoubleClick={false}
             // トラックパッド: 2本指のスワイプで動かし、ピンチで拡大・縮小する（マウスのホイールも動かす。拡大は ⌘＋ホイール）
             panOnScroll
@@ -635,35 +902,20 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
                     return (
                       <li
                         key={n.id}
-                        draggable={!readOnly}
-                        className={`${selected?.id === n.id ? 'is-on' : ''} ${isSection ? 'is-section' : 'is-page'}`}
-                        onDragStart={() => (dragFrom.current = i)}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const from = dragFrom.current;
-                          dragFrom.current = null;
-                          if (from === null || from === i) return;
-                          const moving = flowNodes[from];
-                          const target = n;
-                          updateBoard((b) => {
-                            const tSec = nodeKind(target) === 'section' ? target.id : sectionOf(b, target.id);
-                            if (!tSec) return b;
-                            if (nodeKind(moving) === 'section') {
-                              // セクションごと動かす: 落とした所のセクションの前（下へ動かすときは、その次のセクションの前）
-                              if (tSec === moving.id) return b;
-                              const secs = b.sections ?? [];
-                              const before = from < i ? secs[secs.indexOf(tSec) + 1] ?? null : tSec;
-                              return moveSection(b, moving.id, before);
-                            }
-                            // ページ: 落とした所の前へ（下へ動かすときは後ろへ）。セクションに落としたら、その流れの先頭へ
-                            if (nodeKind(target) === 'section') return movePage(b, moving.id, tSec, tSec);
-                            const pf = b.nodes.find((x) => x.id === tSec)?.pageFlow ?? [];
-                            const before = from < i ? pf[pf.indexOf(target.id) + 1] ?? null : target.id;
-                            return movePage(b, moving.id, tSec, before);
-                          });
+                        ref={(el) => {
+                          rowEls.current[i] = el;
                         }}
-                        onClick={() => centerOn(n.id)}
+                        className={`${selected?.id === n.id ? 'is-on' : ''} ${isSection ? 'is-section' : 'is-page'} ${rowDrag?.from === i && rowDrag.moved ? 'is-dragging' : ''} ${
+                          rowDrag?.moved && rowDrag.over === i && rowDrag.from !== i ? (rowDrag.from < i ? 'drop-after' : 'drop-before') : ''
+                        }`}
+                        onPointerDown={(e) => startRowDrag(e, i)}
+                        onClick={() => {
+                          if (suppressClick.current) {
+                            suppressClick.current = false;
+                            return;
+                          }
+                          centerOn(n.id);
+                        }}
                         onDoubleClick={() => n.sceneId && makesSlide(n) && onOpenSlide(n.sceneId)}
                         title={isSection ? 'セクション。ドラッグでセクションごと順番を変える' : '押すとカードへ。ダブルクリックでスライドを直す。ドラッグで順番を変える（別のセクションへも動かせる）'}
                       >
@@ -779,7 +1031,10 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
                 <li>ダブルクリック（カード）・F2 … 言葉を直す</li>
                 <li>← → ↑ ↓ … 親・子・兄弟へ</li>
                 <li>Delete … 消す ／ ⌘Z … 取り消す</li>
-                <li>右の点から左の点へドラッグ … 枝でつなぐ（枝をダブルクリックで切る）</li>
+                <li>右の「+」からドラッグ … 何もない所で離すと新しいページ、カードに離すとそのカードを子にする</li>
+                <li>枝（灰色の線）を押す … 切る（⌘Z で戻せる）</li>
+                <li>流れの矢印を押す … ×で外す、先のつまみをドラッグで別のカードへつなぎ替える</li>
+                <li>右の「流れ」の欄をドラッグ … 順番を変える（セクションはセクションごと）</li>
                 <li>Shift を押しながらドラッグ … まとめて選ぶ</li>
                 <li>2本指のスワイプ … 動かす ／ ピンチ … 拡大・縮小</li>
               </ul>

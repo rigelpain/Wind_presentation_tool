@@ -145,9 +145,8 @@
 }
 .control .card__fold {
   position: absolute;
-  right: -14px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 22px;
+  bottom: -12px;
   min-width: 24px;
   height: 24px;
   padding: 0 5px;
@@ -439,4 +438,136 @@
   max-width: 560px;
   margin-bottom: 64px;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+}
+
+/* 流れの矢印を選んだとき */
+.board .edge-flow .react-flow__edge-path.is-selected,
+.board .react-flow__edge.selected.edge-flow path {
+  stroke: #fdba74;
+  stroke-width: 6;
+  stroke-dasharray: none;
+}
+.board .react-flow__edge.edge-flow:hover path {
+  stroke-width: 6;
+}
+.board .react-flow__edge.selected.edge-branch path {
+  stroke: #f1ede4;
+  stroke-width: 4;
+}
+.control .edge-flow__x {
+  position: absolute;
+  pointer-events: all;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #e8452c;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+.control .edge-flow__x:hover {
+  background: #b91c1c;
+}
+.edge-flow__grip {
+  position: absolute;
+  pointer-events: all;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fdba74;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  z-index: 10;
+}
+.edge-flow__grip:active {
+  cursor: grabbing;
+}
+.board .edge-flow__drag {
+  fill: none;
+  stroke: #fdba74;
+  stroke-width: 4;
+  stroke-dasharray: 8 6;
+}
+
+/* 流れの欄のドラッグ */
+.board__flow li {
+  touch-action: none;
+  user-select: none;
+}
+.board__flow li.is-dragging {
+  opacity: 0.45;
+}
+.board__flow li.drop-before {
+  box-shadow: inset 0 3px 0 #fdba74;
+}
+.board__flow li.drop-after {
+  box-shadow: inset 0 -3px 0 #fdba74;
+}
+
+/* 枝（親 → 子）。マウスを乗せると「−」の印と「−」の指し示しになり、押すと切れる */
+.board .edge-branch__line {
+  fill: none;
+  stroke: #6b675e;
+  stroke-width: 2.5;
+  transition: stroke 120ms, stroke-width 120ms;
+}
+.board .edge-branch__line.is-hover {
+  stroke: #fca5a5;
+  stroke-width: 3.5;
+  stroke-dasharray: 6 5;
+}
+.board .edge-branch__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  pointer-events: stroke;
+  cursor:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='12' cy='12' r='10' fill='%23e8452c' stroke='white' stroke-width='2'/><rect x='6' y='10.5' width='12' height='3' rx='1.5' fill='white'/></svg>")
+      12 12,
+    pointer;
+}
+.control .edge-branch__minus {
+  position: absolute;
+  pointer-events: all;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: #e8452c;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+/* カードの右の点（ここからドラッグ: 何もない所で離すと新しいページ、カードに離すとそのカードを子に） */
+.board .card__h--b.react-flow__handle-right {
+  width: 18px !important;
+  height: 18px !important;
+  right: -10px;
+  background: #e8452c !important;
+  border: 2px solid #fff !important;
+  cursor: crosshair;
+}
+.board .card__h--b.react-flow__handle-right::after {
+  content: '+';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
 }
