@@ -14,6 +14,7 @@ import {
   Handle,
   MarkerType,
   MiniMap,
+  PanOnScrollMode,
   Panel,
   Position,
   ReactFlow,
@@ -434,6 +435,11 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
               if (!edge.id.startsWith('flow-')) updateBoard((b) => ({ ...b, edges: b.edges.filter((e) => e.id !== edge.id) }));
             }}
             zoomOnDoubleClick={false}
+            // トラックパッド: 2本指のスワイプで動かし、ピンチで拡大・縮小する（マウスのホイールも動かす。拡大は ⌘＋ホイール）
+            panOnScroll
+            panOnScrollMode={PanOnScrollMode.Free}
+            zoomOnScroll={false}
+            zoomOnPinch
             deleteKeyCode={null}
             selectionKeyCode="Shift"
             multiSelectionKeyCode={['Meta', 'Shift']}
@@ -585,6 +591,7 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
                 <li>Delete … 消す ／ ⌘Z … 取り消す</li>
                 <li>右の点から左の点へドラッグ … 枝でつなぐ（枝をダブルクリックで切る）</li>
                 <li>Shift を押しながらドラッグ … まとめて選ぶ</li>
+                <li>2本指のスワイプ … 動かす ／ ピンチ … 拡大・縮小</li>
               </ul>
             </details>
           </aside>
