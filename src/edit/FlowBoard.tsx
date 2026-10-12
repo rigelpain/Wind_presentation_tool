@@ -7,6 +7,7 @@
 //   ← → ↑ ↓ … 親・子・兄弟へ選びを動かす
 //   カードの右の点から別のカードの左の点へドラッグ … 枝でつなぐ
 //   「流れをつくる」を入れて、話す順にカードを押す … 流れに入る（もう一度押すと外れる）
+//   カードを選ぶと、次に考えるとよいことが薄いカードで出る（押すと本当のカードになる。電球で出さないようにできる）
 import '@xyflow/react/dist/style.css';
 import {
   Background,
@@ -40,6 +41,9 @@ import {
   CirclePlus,
   GitBranchPlus,
   GripVertical,
+  Lightbulb,
+  Plus,
+  RefreshCw,
   Maximize,
   Network,
   PanelRightOpen,
@@ -53,6 +57,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { IconButton, Segmented, Swatches } from '../control/ui';
 import type { Board, BoardNode, BoardNodeKind, Lesson } from '../engine/types';
 import { addNode, childPosition, childrenOf, descendantsOf, GAP_Y, isDescendant, KIND_INFO, makesSlide, movePage, moveSection, newNodeId, NODE_H, NODE_W, nodeKind, parentOf, removeNodes, sectionOf, tidy, togglePage } from './board';
+import { hintsFor, type Hint } from './hints';
 import { kindOf, SLIDE_KINDS } from './schema';
 import './FlowBoard.css';
 
@@ -81,6 +86,10 @@ interface Ctx {
   unlinkFlow: (from: string, to: string) => void;
   /** 流れの矢印 from → to の先を、別のカード to2 につなぎ替える（to2 を from のすぐ次にする） */
   relinkFlow: (from: string, to2: string) => void;
+  /** 薄いカード（手がかり）を本当のカードにする */
+  adoptHint: (hint: Hint) => void;
+  /** ほかの手がかりを出す */
+  moreHints: () => void;
   readOnly: boolean;
 }
 const BoardCtx = createContext<Ctx | null>(null);
@@ -197,7 +206,44 @@ function Card({ id, data, selected }: NodeProps<Node<CardData>>) {
   );
 }
 
-const nodeTypes = { card: Card };
+interface HintData extends Record<string, unknown> {
+  hint: Hint;
+  last: boolean;
+}
+
+/** 薄いカード。押すと、その言葉の本当のカードになる（すぐ書き換えられる） */
+function HintCard({ data }: NodeProps<Node<HintData>>) {
+  const ctx = useContext(BoardCtx)!;
+  const { hint, last } = data;
+  return (
+    <div
+      className={`hintcard hintcard--${hint.kind}`}
+      data-tip={`${hint.why}（押すとカードになる）`}
+      onClick={(e) => {
+        e.stopPropagation();
+        ctx.adoptHint(hint);
+      }}
+    >
+      <Handle type="target" position={Position.Left} id="b" className="card__h card__h--f" isConnectable={false} />
+      <Plus size={14} aria-hidden />
+      <span>{hint.text}</span>
+      {last && (
+        <button
+          className="hintcard__more nodrag"
+          data-tip="ほかの手がかり"
+          onClick={(e) => {
+            e.stopPropagation();
+            ctx.moreHints();
+          }}
+        >
+          <RefreshCw size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+const nodeTypes = { card: Card, hint: HintCard };
 
 /**
  * 流れの矢印。押すと選ばれ、まん中に「×」（流れから外す）、先に「つまみ」（ドラッグで別のカードへつなぎ替える）が出る
@@ -346,6 +392,14 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
   const [editingId, setEditingId] = useState<string | null>(null);
   const [flowMode, setFlowMode] = useState(false);
   const [panel, setPanel] = useState(true);
+  const [hintsOn, setHintsOn] = useState(() => {
+    try {
+      return localStorage.getItem('wind-board-hints') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const [hintRound, setHintRound] = useState(0);
   const wrap = useRef<HTMLDivElement>(null);
   const sceneKind = useMemo(() => new Map(lesson.scenes.map((s) => [s.id, s.kind])), [lesson.scenes]);
   const flowIndex = useMemo(() => new Map(board.flow.map((id, i) => [id, i])), [board.flow]);
@@ -444,6 +498,42 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
     });
     return [...branch, ...flowEdges];
   }, [board, hidden, live, edgeSel]);
+
+  // 手がかりの薄いカード（選んだカードが1枚で、直していないとき）
+  const hints: Hint[] = useMemo(() => {
+    if (!hintsOn || readOnly || flowMode || editingId || !selected || hidden.has(selected.id)) return [];
+    const at = live.get(selected.id)?.position;
+    const sel = at ? { ...selected, x: at.x, y: at.y } : selected;
+    return hintsFor({ ...board, nodes: board.nodes.map((n) => (n.id === sel.id ? sel : n)) }, sel, hintRound);
+  }, [hintsOn, readOnly, flowMode, editingId, selected, hidden, live, board, hintRound]);
+  useEffect(() => setHintRound(0), [selected?.id]);
+  const shownNodes: Node[] = useMemo(
+    () => [
+      ...nodes,
+      ...hints.map((h, i) => ({
+        id: h.id,
+        type: 'hint',
+        position: { x: h.x, y: h.y },
+        selectable: false,
+        draggable: false,
+        connectable: false,
+        focusable: false,
+        measured: { width: NODE_W, height: 44 },
+        style: { width: NODE_W },
+        data: { hint: h, last: i === hints.length - 1 },
+      })),
+    ],
+    [nodes, hints],
+  );
+  const shownEdges: Edge[] = useMemo(
+    () => [
+      ...edges,
+      ...hints
+        .filter((h) => h.parent)
+        .map((h) => ({ id: `${h.id}-e`, source: h.parent!, target: h.id, sourceHandle: 'b', targetHandle: 'b', className: 'edge-hint', selectable: false, focusable: false })),
+    ],
+    [edges, hints],
+  );
 
   const updateBoard = (fn: (b: Board) => Board, opts?: { merge?: boolean }) => {
     if (readOnly) return;
@@ -583,6 +673,16 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
         return movePage(b, z.id, fSec, before);
       });
     },
+    adoptHint: (h) => {
+      const id = newNodeId();
+      updateBoard((b) => {
+        if (h.parent && !b.nodes.some((n) => n.id === h.parent)) return b;
+        const node = h.kind === 'section' ? { x: h.x, y: h.y, text: h.text, kind: 'section' as const, sectionMode: 'none' as const } : { x: h.x, y: h.y, text: h.text, kind: 'page' as const };
+        return addNode(b, node, h.parent ?? undefined, id).board;
+      });
+      startNew(id);
+    },
+    moreHints: () => setHintRound((r) => r + 1),
     readOnly,
   };
 
@@ -784,15 +884,16 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
           }}
         >
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={shownNodes}
+            edges={shownEdges}
             nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
+            onNodesChange={(changes) => onNodesChange(changes.filter((c) => !('id' in c) || !c.id.startsWith('hint:')) as Parameters<typeof onNodesChange>[0])}
             onNodeDragStop={(_, __, dragged) => {
               const moved = new Map(dragged.map((n) => [n.id, n.position]));
               updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (moved.has(n.id) ? { ...n, x: Math.round(moved.get(n.id)!.x), y: Math.round(moved.get(n.id)!.y) } : n)) }));
             }}
             onNodeClick={(_, n) => {
+              if (n.type === 'hint') return;
               if (flowMode && !readOnly) toggleFlow(n.id);
             }}
             onConnect={onConnect}
@@ -833,6 +934,7 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
               ariaLabel="全体の地図"
               nodeColor={(n) => {
                 const d = n.data as CardData;
+                if (!d.node) return 'transparent';
                 return nodeKind(d.node) === 'section' ? '#E8452C' : d.inFlow ? '#FDBA74' : '#CFC8B8';
               }}
               nodeStrokeWidth={0}
@@ -850,6 +952,20 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, c
               <span className="board__sep" />
               <IconButton icon={Route} label="流れをつくる" title="入れてから、話す順にカードを押す。もう一度押すと外れる" active={flowMode} disabled={readOnly} onClick={() => setFlowMode((m) => !m)} />
               <span className="board__sep" />
+              <IconButton
+                icon={Lightbulb}
+                title={hintsOn ? '考える手がかりを出さない（カードを選ぶと、次に考えることが薄く出ています）' : '考える手がかりを出す（カードを選ぶと、次に考えることが薄く出る）'}
+                active={hintsOn}
+                onClick={() => {
+                  const on = !hintsOn;
+                  setHintsOn(on);
+                  try {
+                    localStorage.setItem('wind-board-hints', on ? 'on' : 'off');
+                  } catch {
+                    /* なくてよい */
+                  }
+                }}
+              />
               <IconButton icon={Network} title="枝を整える（選んだカードの枝。選んでいなければ全部）" disabled={readOnly} onClick={() => updateBoard((b) => tidy(b, selectedIds.length ? selectedIds : undefined))} />
               <IconButton icon={Maximize} title="全体を見る" onClick={() => void rf.fitView({ padding: 0.25, duration: 300, maxZoom: 1 })} />
               <span className="board__sep" />

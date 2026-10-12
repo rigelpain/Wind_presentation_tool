@@ -571,3 +571,61 @@
   line-height: 1;
   pointer-events: none;
 }
+
+/* 考える手がかり（薄いカード）。押すと本当のカードになる */
+.board .react-flow__node-hint {
+  cursor: pointer;
+}
+.hintcard {
+  position: relative;
+  min-height: 44px;
+  padding: 8px 12px 8px 14px;
+  border-radius: 12px;
+  border: 2px dashed rgba(241, 237, 228, 0.2);
+  background: rgba(42, 40, 36, 0.35);
+  color: rgba(241, 237, 228, 0.42);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  animation: hintcard-in 260ms ease-out;
+  transition: color 120ms, border-color 120ms, background 120ms;
+}
+.hintcard--section {
+  border-color: color-mix(in srgb, #e8452c 35%, transparent);
+  color: color-mix(in srgb, #e8452c 55%, rgba(241, 237, 228, 0.4));
+  font-weight: 700;
+}
+.hintcard:hover {
+  color: #f1ede4;
+  border-color: #e8452c;
+  background: rgba(42, 40, 36, 0.85);
+}
+.hintcard span {
+  flex: 1;
+}
+.hintcard__more {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.hintcard__more:hover {
+  background: rgba(241, 237, 228, 0.12);
+}
+.board .edge-hint .react-flow__edge-path {
+  stroke: rgba(241, 237, 228, 0.18);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+}
+@keyframes hintcard-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
