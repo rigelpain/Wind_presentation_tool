@@ -27,7 +27,10 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import {
+  Bookmark,
   ChevronRight,
+  Copy,
+  FileText,
   CirclePlus,
   GitBranchPlus,
   GripVertical,
@@ -43,15 +46,18 @@ import {
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent } from 'react';
 import { IconButton, Segmented, Swatches } from '../control/ui';
 import type { Board, BoardNode, BoardNodeKind, Lesson } from '../engine/types';
-import { addNode, childPosition, childrenOf, descendantsOf, GAP_Y, KIND_INFO, newNodeId, NODE_H, NODE_W, parentOf, removeNodes, tidy } from './board';
-import { kindOf } from './schema';
+import { addNode, childPosition, childrenOf, descendantsOf, GAP_Y, KIND_INFO, makesSlide, newNodeId, NODE_H, NODE_W, nodeKind, parentOf, removeNodes, tidy } from './board';
+import { kindOf, SLIDE_KINDS } from './schema';
 import './FlowBoard.css';
 
 type SetLesson = (fn: (l: Lesson) => Lesson, opts?: { merge?: boolean }) => void;
 
 interface CardData extends Record<string, unknown> {
   node: BoardNode;
-  flowIndex: number | null;
+  /** 流れに入っているか */
+  inFlow: boolean;
+  /** スライドの番号（流れに入っていてスライドになるとき） */
+  slideNo: number | null;
   sceneKind?: string;
   kids: number;
   editing: boolean;
@@ -70,8 +76,10 @@ const COLORS = ['#E8452C', '#F59E0B', '#0E9F6E', '#2F6FEB', '#8A4FD8', '#8A8577'
 
 function Card({ id, data, selected }: NodeProps<Node<CardData>>) {
   const ctx = useContext(BoardCtx)!;
-  const { node, flowIndex, sceneKind, kids, editing, flowMode } = data;
-  const color = node.color ?? KIND_INFO[node.kind].color;
+  const { node, inFlow, slideNo, sceneKind, kids, editing, flowMode } = data;
+  const kind = nodeKind(node);
+  const color = node.color ?? KIND_INFO[kind].color;
+  const placeholder = kind === 'section' ? 'セクション' : 'ページ';
   const [text, setText] = useState(node.text);
   useEffect(() => setText(node.text), [node.text, editing]);
   // 新しいカードは、大きさを測り終えるまで見えない（見えないと文字の欄に入れない）。見えたらすぐ入れる
@@ -110,7 +118,7 @@ function Card({ id, data, selected }: NodeProps<Node<CardData>>) {
   };
   return (
     <div
-      className={`card card--${node.kind} ${selected ? 'is-selected' : ''} ${flowIndex !== null ? 'is-flow' : ''} ${flowMode ? 'is-flowmode' : ''}`}
+      className={`card card--${kind} ${selected ? 'is-selected' : ''} ${inFlow ? 'is-flow' : ''} ${flowMode ? 'is-flowmode' : ''}`}
       style={{ '--card': color } as CSSProperties}
       onDoubleClick={(e) => {
         e.stopPropagation();
@@ -121,22 +129,37 @@ function Card({ id, data, selected }: NodeProps<Node<CardData>>) {
       {FLOW_SIDES.map(([side, pos]) => (
         <Handle key={`t${side}`} type="target" position={pos} id={`ft${side}`} className="card__h card__h--f" isConnectable={false} />
       ))}
-      {flowIndex !== null && <span className="card__num" title="流れの順番（スライドの番号）">{flowIndex + 1}</span>}
+      {inFlow &&
+        (slideNo !== null ? (
+          <span className="card__num" title="スライドの番号">
+            {slideNo}
+          </span>
+        ) : (
+          <span className="card__num card__num--none" title="流れの区切り（スライドにしない）">
+            §
+          </span>
+        ))}
+      {kind === 'section' && (
+        <span className="card__tag" title={node.sectionMode === 'eyecatch' ? 'アイキャッチ（区切りの題のスライド）を挟む' : 'スライドにしない（流れの区切りだけ）'}>
+          <Bookmark size={11} aria-hidden />
+          {node.sectionMode === 'eyecatch' ? 'アイキャッチ' : 'スライドなし'}
+        </span>
+      )}
       {editing ? (
         <textarea
           ref={focusWhenVisible}
           className="card__input nodrag nowheel"
           value={text}
           rows={Math.max(1, text.split('\n').length)}
-          placeholder={node.kind === 'seed' ? '話のタネ' : 'ことば'}
+          placeholder={placeholder}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={onKey}
           onBlur={() => ctx.commitText(id, text)}
         />
       ) : (
-        <div className={`card__text ${node.text ? '' : 'is-empty'}`}>{node.text || (node.kind === 'seed' ? '話のタネ' : 'ことば')}</div>
+        <div className={`card__text ${node.text ? '' : 'is-empty'}`}>{node.text || placeholder}</div>
       )}
-      {SlideIcon && (
+      {SlideIcon && kind === 'page' && (
         <span className="card__slide" title={`スライド: ${kindOf(sceneKind!)?.label ?? sceneKind}`}>
           <SlideIcon size={12} />
         </span>
@@ -185,7 +208,7 @@ function hiddenSet(board: Board): Set<string> {
   return out;
 }
 
-function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, canRedo }: Props) {
+function Inner({ lesson, setLesson, readOnly, onOpenSlide, onCopy, undo, redo, canUndo, canRedo }: Props) {
   const board = lesson.board!;
   const rf = useReactFlow();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -194,6 +217,16 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
   const wrap = useRef<HTMLDivElement>(null);
   const sceneKind = useMemo(() => new Map(lesson.scenes.map((s) => [s.id, s.kind])), [lesson.scenes]);
   const flowIndex = useMemo(() => new Map(board.flow.map((id, i) => [id, i])), [board.flow]);
+  // スライドの番号は、スライドになるカードだけで数える（スライドにしないセクションは数えない）
+  const slideNo = useMemo(() => {
+    const m = new Map<string, number>();
+    let k = 0;
+    for (const id of board.flow) {
+      const n = board.nodes.find((x) => x.id === id);
+      if (n && makesSlide(n)) m.set(id, ++k);
+    }
+    return m;
+  }, [board.flow, board.nodes]);
   const hidden = useMemo(() => hiddenSet(board), [board]);
 
   const build = useCallback(
@@ -213,7 +246,8 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
           style: { width: NODE_W },
           data: {
             node: n,
-            flowIndex: flowIndex.has(n.id) ? flowIndex.get(n.id)! : null,
+            inFlow: flowIndex.has(n.id),
+            slideNo: slideNo.get(n.id) ?? null,
             sceneKind: n.sceneId && flowIndex.has(n.id) ? sceneKind.get(n.sceneId) : undefined,
             kids: childrenOf(board, n.id).length,
             editing: editingId === n.id,
@@ -222,7 +256,7 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
         };
       });
     },
-    [board, hidden, flowIndex, sceneKind, editingId, flowMode, readOnly],
+    [board, hidden, flowIndex, slideNo, sceneKind, editingId, flowMode, readOnly],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CardData>>([]);
   useEffect(() => setNodes((prev) => build(prev)), [build, setNodes]);
@@ -319,7 +353,7 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
   };
   const addSeedAt = (x: number, y: number) => {
     const id = newNodeId();
-    updateBoard((b) => addNode(b, { x: x - NODE_W / 2, y: y - NODE_H / 2, kind: 'seed' }, undefined, id).board);
+    updateBoard((b) => addNode(b, { x: x - NODE_W / 2, y: y - NODE_H / 2, kind: 'section', sectionMode: 'none' }, undefined, id).board);
     startNew(id);
   };
   const removeSelected = (ids = selectedIds) => {
@@ -352,13 +386,36 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
     toggleCollapse: (id) => updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (n.id === id ? { ...n, collapsed: !n.collapsed } : n)) })),
   };
 
-  // キーボード（カードを直している最中は、カードの欄が受け取る）
-  const onKey = (e: RKeyboardEvent<HTMLDivElement>) => {
-    if (editingId || readOnly) return;
+  /** 見える範囲の真ん中にセクションを置く */
+  const addAtCenter = () => {
+    const box = wrap.current?.querySelector('.board__canvas')?.getBoundingClientRect();
+    const p = rf.screenToFlowPosition({ x: (box?.left ?? 0) + (box?.width ?? 800) / 2, y: (box?.top ?? 0) + (box?.height ?? 600) / 2 });
+    addSeedAt(p.x, p.y);
+  };
+  const [nudge, setNudge] = useState(0);
+
+  // キーボード。窓全体で受け取る（ボードを一度押していなくても効くように）。カードを直している最中は、カードの欄が受け取る
+  const keyRef = useRef<(e: KeyboardEvent) => void>(() => {});
+  keyRef.current = (e: KeyboardEvent) => {
+    if (editingId || e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
     const t = e.target as HTMLElement;
-    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
+    if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable) return;
+    if (document.querySelector('.panel-backdrop')) return;
+    if (!['Tab', 'Enter', 'F2', 'Delete', 'Backspace', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    if (readOnly) {
+      // 見本は直せないので、写して編集するよう知らせる
+      e.preventDefault();
+      setNudge((x) => x + 1);
+      return;
+    }
     const id = selected?.id;
-    if (!id || e.metaKey || e.ctrlKey) return;
+    if (!id) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        addAtCenter();
+      }
+      return;
+    }
     const go = (target?: BoardNode) => target && (e.preventDefault(), centerOn(target.id));
     switch (e.key) {
       case 'Tab':
@@ -394,6 +451,29 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
       }
     }
   };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => keyRef.current(e);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  /** ページのスライドの種類を変える（中身はその種類のひな形に入れ替わる） */
+  const setSlideKind = (node: BoardNode, kind: string) => {
+    const def = kindOf(kind);
+    if (!def || !node.sceneId) return;
+    if (!confirm(`スライドを「${def.label}」に変えます。いまの中身は入れ替わります。`)) return;
+    setLesson((l) => ({
+      ...l,
+      scenes: l.scenes.map((sc) => {
+        if (sc.id !== node.sceneId) return sc;
+        const made = def.make();
+        const props = { ...(made.props ?? {}) };
+        const text = node.text.trim() || made.title;
+        for (const k of ['heading', 'title', 'question']) if (k in props) props[k] = text;
+        return { ...made, id: sc.id, title: text, notes: sc.notes, props };
+      }),
+    }));
+  };
 
   const onConnect = (c: Connection) => {
     if (!c.source || !c.target || c.source === c.target) return;
@@ -408,11 +488,14 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
 
   return (
     <BoardCtx.Provider value={ctx}>
-      <div className={`board ${flowMode ? 'is-flowmode' : ''}`} ref={wrap} tabIndex={0} onKeyDown={onKey}>
+      <div className={`board ${flowMode ? 'is-flowmode' : ''}`} ref={wrap} tabIndex={0}>
         <div
           className="board__canvas"
           onDoubleClick={(e) => {
-            if (readOnly) return;
+            if (readOnly) {
+              setNudge((x) => x + 1);
+              return;
+            }
             if (!(e.target as HTMLElement).classList.contains('react-flow__pane')) return;
             const p = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
             addSeedAt(p.x, p.y);
@@ -450,9 +533,23 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
             proOptions={{ hideAttribution: true }}
           >
             <Background variant={BackgroundVariant.Dots} gap={22} size={1.6} color="#46433b" />
-            <MiniMap pannable zoomable className="board__minimap" nodeColor={(n) => ((n.data as CardData).flowIndex !== null ? '#E8452C' : '#8A8577')} maskColor="rgba(20,20,20,0.6)" />
+            <MiniMap
+              pannable
+              zoomable
+              className="board__minimap"
+              ariaLabel="全体の地図"
+              nodeColor={(n) => {
+                const d = n.data as CardData;
+                return nodeKind(d.node) === 'section' ? '#E8452C' : d.inFlow ? '#FDBA74' : '#CFC8B8';
+              }}
+              nodeStrokeWidth={0}
+              nodeBorderRadius={6}
+              maskColor="rgba(8,8,8,0.55)"
+              maskStrokeColor="#F1EDE4"
+              maskStrokeWidth={3}
+            />
             <Panel position="top-left" className="board__tools">
-              <IconButton icon={CirclePlus} title="タネを置く（何もない所をダブルクリックでも）" disabled={readOnly} onClick={() => {
+              <IconButton icon={CirclePlus} title="セクションを置く（何もない所をダブルクリックでも）" disabled={readOnly} onClick={() => {
                 const p = rf.screenToFlowPosition({ x: (wrap.current?.clientWidth ?? 800) / 2, y: (wrap.current?.clientHeight ?? 600) / 2 });
                 addSeedAt(p.x, p.y);
               }} />
@@ -472,9 +569,15 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
                 話す順にカードを押してください。押した順に番号が付き、スライドになります（もう一度押すと外れます）
               </Panel>
             )}
+            {readOnly && (
+              <Panel position="bottom-center" className={`board__readonly ${nudge ? 'is-nudged' : ''}`} key={`ro-${nudge}`}>
+                <span>これは見本です。直すときは写してから</span>
+                <IconButton icon={Copy} label="写して編集" title="この見本を写して、編集できる授業にする" variant="primary" onClick={onCopy} />
+              </Panel>
+            )}
             {empty && (
               <Panel position="top-center" className="board__empty">
-                何もない所をダブルクリックして、話のタネを置きましょう
+                何もない所をダブルクリックして、話のタネ（セクション）を置きましょう
               </Panel>
             )}
           </ReactFlow>
@@ -495,12 +598,14 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
               ) : (
                 <ol>
                   {flowNodes.map((n, i) => {
-                    const k = n.sceneId ? kindOf(sceneKind.get(n.sceneId) ?? '') : undefined;
+                    const isSection = nodeKind(n) === 'section';
+                    const k = n.sceneId && makesSlide(n) ? kindOf(sceneKind.get(n.sceneId) ?? '') : undefined;
+                    const no = slideNo.get(n.id);
                     return (
                       <li
                         key={n.id}
                         draggable={!readOnly}
-                        className={selected?.id === n.id ? 'is-on' : ''}
+                        className={`${selected?.id === n.id ? 'is-on' : ''} ${isSection ? 'is-section' : 'is-page'}`}
                         onDragStart={() => (dragFrom.current = i)}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
@@ -516,12 +621,12 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
                           });
                         }}
                         onClick={() => centerOn(n.id)}
-                        onDoubleClick={() => n.sceneId && onOpenSlide(n.sceneId)}
+                        onDoubleClick={() => n.sceneId && makesSlide(n) && onOpenSlide(n.sceneId)}
                         title="押すとカードへ。ダブルクリックでスライドを直す。ドラッグで順番を変える"
                       >
                         <GripVertical size={13} className="board__grip" aria-hidden />
-                        <span className="board__num">{i + 1}</span>
-                        {k && <k.icon size={14} aria-hidden />}
+                        {no !== undefined ? <span className="board__num">{no}</span> : <span className="board__num board__num--none">§</span>}
+                        {isSection ? <Bookmark size={14} aria-hidden /> : k ? <k.icon size={14} aria-hidden /> : <span />}
                         <span className="board__ftext">{n.text || '（無題）'}</span>
                         {!readOnly && (
                           <button
@@ -545,15 +650,44 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
             {selected && (
               <section className="board__inspect">
                 <header>
-                  <span className="board__dot" style={{ background: selected.color ?? KIND_INFO[selected.kind].color }} />
+                  <span className="board__dot" style={{ background: selected.color ?? KIND_INFO[nodeKind(selected)].color }} />
                   <h3>選んだカード</h3>
                 </header>
                 <Segmented<BoardNodeKind>
-                  wrap
-                  options={(Object.keys(KIND_INFO) as BoardNodeKind[]).map((k) => ({ value: k, label: KIND_INFO[k].label }))}
-                  value={selected.kind}
-                  onChange={(kind) => updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (n.id === selected.id ? { ...n, kind } : n)) }))}
+                  options={[
+                    { value: 'section', label: 'セクション', icon: Bookmark, title: '流れの区切り。スライドにしないか、アイキャッチにする' },
+                    { value: 'page', label: 'ページ', icon: FileText, title: '流れに入れるとスライドになる' },
+                  ]}
+                  value={nodeKind(selected)}
+                  onChange={(kind) =>
+                    updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (n.id === selected.id ? { ...n, kind, sectionMode: kind === 'section' ? n.sectionMode ?? 'none' : undefined } : n)) }))
+                  }
                 />
+                {nodeKind(selected) === 'section' ? (
+                  <Segmented<'none' | 'eyecatch'>
+                    options={[
+                      { value: 'none', label: 'スライドにしない', title: '流れの区切りだけ（表示画面には何も出ない）' },
+                      { value: 'eyecatch', label: 'アイキャッチ', title: 'セクションの題のスライドを、ページのあいだに挟む' },
+                    ]}
+                    value={selected.sectionMode ?? 'none'}
+                    onChange={(sectionMode) => updateBoard((b) => ({ ...b, nodes: b.nodes.map((n) => (n.id === selected.id ? { ...n, sectionMode } : n)) }))}
+                  />
+                ) : (
+                  selected.sceneId &&
+                  flowIndex.has(selected.id) && (
+                    <label className="board__kind">
+                      <span>スライドの種類</span>
+                      <select value={sceneKind.get(selected.sceneId) ?? ''} disabled={readOnly} onChange={(e) => setSlideKind(selected, e.target.value)}>
+                        {SLIDE_KINDS.filter((k) => k.kind !== 'eyecatch').map((k) => (
+                          <option key={k.kind} value={k.kind}>
+                            {k.label}
+                          </option>
+                        ))}
+                        {!kindOf(sceneKind.get(selected.sceneId) ?? '') && <option value={sceneKind.get(selected.sceneId)}>{sceneKind.get(selected.sceneId)}</option>}
+                      </select>
+                    </label>
+                  )
+                )}
                 <Swatches
                   colors={COLORS}
                   value={selected.color ?? ''}
@@ -565,18 +699,18 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
                   <IconButton
                     icon={Route}
                     label={flowIndex.has(selected.id) ? '流れから外す' : '流れに入れる'}
-                    title={flowIndex.has(selected.id) ? '流れから外す（スライドはしまっておく）' : '流れの最後に入れる（スライドができる）'}
+                    title={flowIndex.has(selected.id) ? '流れから外す（スライドはしまっておく）' : '流れの最後に入れる'}
                     active={flowIndex.has(selected.id)}
                     disabled={readOnly}
                     onClick={() => toggleFlow(selected.id)}
                   />
-                  {selected.sceneId && flowIndex.has(selected.id) && (
+                  {selected.sceneId && flowIndex.has(selected.id) && makesSlide(selected) && (
                     <IconButton icon={PanelRightOpen} label="スライドを直す" title="スライドの中身を直す" onClick={() => onOpenSlide(selected.sceneId!)} />
                   )}
                   <IconButton icon={Trash2} title="カードを消す（Delete）" variant="danger" disabled={readOnly} onClick={() => removeSelected([selected.id])} />
                 </div>
                 <p className="hint">
-                  流れに入れると、カードの言葉が見出し、子のカードが本文の行のスライドができます（「問い」のカードは 予想→答え のスライド）。
+                  ページを流れに入れると、カードの言葉が見出し、子のカードが本文の行のスライドができます。セクションは、流れの区切り（スライドにしない）か、アイキャッチ（区切りの題のスライド）を選べます。
                 </p>
               </section>
             )}
@@ -584,8 +718,8 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
             <details className="board__keys">
               <summary>操作</summary>
               <ul>
-                <li>ダブルクリック（何もない所）… タネを置く</li>
-                <li>Tab … 子を足す ／ Enter … 兄弟を足す</li>
+                <li>ダブルクリック（何もない所）… セクションを置く</li>
+                <li>Tab … 子（ページ）を足す ／ Enter … 兄弟を足す（何も選んでいなければ、真ん中にセクション）</li>
                 <li>ダブルクリック（カード）・F2 … 言葉を直す</li>
                 <li>← → ↑ ↓ … 親・子・兄弟へ</li>
                 <li>Delete … 消す ／ ⌘Z … 取り消す</li>
@@ -603,6 +737,8 @@ function Inner({ lesson, setLesson, readOnly, onOpenSlide, undo, redo, canUndo, 
 
 interface Props {
   lesson: Lesson;
+  /** 見本を写して編集する */
+  onCopy: () => void;
   setLesson: SetLesson;
   readOnly: boolean;
   onOpenSlide: (sceneId: string) => void;

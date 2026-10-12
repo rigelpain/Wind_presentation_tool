@@ -1,5 +1,6 @@
 // 編集画面で作れるスライドの種類と、その入力欄。種類ごとの画面を作らず、この表から入力欄を組み立てる。
 import {
+  Bookmark,
   Columns2,
   Eye,
   Hash,
@@ -53,6 +54,18 @@ const EMPHASIS_HINT = '**言葉** で大きく、色を変えて強調';
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 
 export const SLIDE_KINDS: SlideKind[] = [
+  {
+    kind: 'eyecatch',
+    label: 'アイキャッチ',
+    icon: Bookmark,
+    make: () => ({ kind: 'eyecatch', title: 'セクション', transition: 'black', props: { title: 'セクションの題' } }),
+    fields: [
+      { key: 'title', label: '題', type: 'textarea', hint: EMPHASIS_HINT },
+      { key: 'kicker', label: '番号の代わりの一言', type: 'text', placeholder: '空なら Section 1 のように番号', hint: '構成のセクションの順に、番号が自動で入る' },
+      { key: 'subtitle', label: '副題', type: 'textarea' },
+    ],
+    summary: (p) => str(p.title),
+  },
   {
     kind: 'title',
     label: '題',

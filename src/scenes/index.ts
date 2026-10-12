@@ -5,6 +5,7 @@ import { BoardScene } from './BoardScene';
 import { ChapterScene } from './ChapterScene';
 import { CompareScene } from './CompareScene';
 import { EffectLogScene } from './EffectLogScene';
+import { EyecatchScene } from './EyecatchScene';
 import { FlashScene } from './FlashScene';
 import { RevealScene } from './RevealScene';
 import { TimerScene } from './TimerScene';
@@ -20,4 +21,5 @@ export function registerScenes() {
   registerKind('compare', CompareScene);
   registerKind('reveal', RevealScene);
   registerKind('chapter', ChapterScene);
+  registerKind('eyecatch', EyecatchScene);
 }

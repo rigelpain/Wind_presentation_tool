@@ -201,6 +201,7 @@ export function Editor() {
             lesson={draft}
             setLesson={setLesson}
             readOnly={readOnly}
+            onCopy={() => create(copyLesson(draft))}
             onOpenSlide={(sceneId) => {
               const i = draft.scenes.findIndex((s) => s.id === sceneId);
               if (i >= 0) setSel(i);

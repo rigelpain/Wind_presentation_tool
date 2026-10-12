@@ -1,0 +1,29 @@
+.scene.eyecatch {
+  background: #141414;
+  color: #fff;
+  justify-content: center;
+  padding-left: 160px;
+  padding-right: 160px;
+}
+.eyecatch__kicker {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin-bottom: 28px;
+}
+.eyecatch__title {
+  font-size: 128px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+}
+.eyecatch__title .em {
+  font-size: 1em;
+}
+.eyecatch__sub {
+  font-size: 48px;
+  font-weight: 700;
+  color: #cfc8b8;
+  margin: 36px 0 0;
+}

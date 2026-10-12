@@ -50,8 +50,12 @@ export interface Scene {
   props?: Record<string, unknown>;
 }
 
-/** 構成のカードの種類 */
-export type BoardNodeKind = 'seed' | 'idea' | 'question' | 'note';
+/**
+ * 構成のカードの種類。
+ * - page: ページ。流れに入れるとスライドになる
+ * - section: セクション。流れの区切り。スライドにしないか、アイキャッチ（区切りの題のスライド）にするかを選ぶ
+ */
+export type BoardNodeKind = 'section' | 'page';
 
 /** 構成（編集画面）のカード */
 export interface BoardNode {
@@ -60,6 +64,8 @@ export interface BoardNode {
   y: number;
   text: string;
   kind: BoardNodeKind;
+  /** セクションのとき: none はスライドにしない、eyecatch は区切りの題のスライドを挟む */
+  sectionMode?: 'none' | 'eyecatch';
   /** 枠の色（#RRGGBB）。省くと種類の色 */
   color?: string;
   /** このカードのスライド */

@@ -82,7 +82,7 @@ export function SlideEditor({ lesson, setLesson, readOnly, sel, setSel }: { less
   const insertAfter = (s: Scene) => {
     setLesson((l) => {
       const cur = scene ? nodeOf(l, scene.id) : undefined;
-      const node: BoardNode = { id: newNodeId(), x: cur?.x ?? 0, y: (cur?.y ?? 0) + NODE_H + 60, text: s.title, kind: 'seed', sceneId: s.id };
+      const node: BoardNode = { id: newNodeId(), x: cur?.x ?? 0, y: (cur?.y ?? 0) + NODE_H + 60, text: s.title, kind: 'page', sceneId: s.id };
       const flow = [...(l.board?.flow ?? [])];
       const at = cur ? flow.indexOf(cur.id) + 1 : flow.length;
       flow.splice(at, 0, node.id);
